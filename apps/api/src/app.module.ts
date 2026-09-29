@@ -8,6 +8,7 @@ import { RolesGuard } from './common/auth/roles.guard';
 import { AppThrottlerGuard } from './common/security/app-throttler.guard';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ClientsModule } from './modules/clients/clients.module';
 import { HealthModule } from './modules/health/health.module';
@@ -43,6 +44,7 @@ import { UsersModule } from './modules/users/users.module';
     ScheduleModule,
     ServicesModule,
     AppointmentsModule,
+    DashboardModule,
     PointsModule,
     HealthModule,
   ],

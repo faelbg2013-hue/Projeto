@@ -218,6 +218,49 @@ export interface PointsAdjustmentResult {
   transaction: PointsTransactionItem;
 }
 
+export interface DashboardSummary {
+  totalAppointments: number;
+  confirmed: number;
+  completed: number;
+  cancelled: number;
+  noShow: number;
+  servicesValue: string;
+  pointsRedeemed: number;
+  pointsReversed: number;
+  pointsEarned: number;
+}
+
+export interface DashboardAppointment {
+  id: string;
+  time: string;
+  clientName: string;
+  professionalName: string;
+  serviceName: string;
+  durationMinutes: number;
+  price: string;
+  status: AppointmentStatus;
+  bookingMode: BookingMode;
+  redemptionPointsSnapshot: number | null;
+}
+
+export interface DashboardProfessional {
+  professionalId: string;
+  name: string;
+  appointments: number;
+  completed: number;
+  cancelled: number;
+  noShow: number;
+  servicesValue: string;
+}
+
+export interface OperationalDashboard {
+  date: string;
+  summary: DashboardSummary;
+  upcoming: DashboardAppointment[];
+  appointments: DashboardAppointment[];
+  professionals: DashboardProfessional[];
+}
+
 export function isUserRole(value: unknown): value is UserRole {
   return typeof value === 'string' && userRoles.some((role) => role === value);
 }

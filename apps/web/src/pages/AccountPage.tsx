@@ -26,6 +26,7 @@ const accountLinks: Record<UserRole, ReadonlyArray<{ to: string; label: string }
     { to: '/profissional/agendamentos', label: 'Agendamentos' },
   ],
   ADMIN: [
+    { to: '/admin/dashboard', label: 'Painel' },
     { to: '/admin/services', label: 'Serviços' },
     { to: '/admin/professionals', label: 'Profissionais' },
     { to: '/admin/clients', label: 'Clientes' },

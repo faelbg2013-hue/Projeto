@@ -55,10 +55,11 @@ Módulos atuais:
 - `schedule`: agenda semanal, bloqueios, exceções e disponibilidade
 - `services`: catálogo com preço, duração e pontuação configurável
 - `appointments`: criação, consulta, cancelamento, conclusão e não comparecimento
+- `dashboard`: visão operacional de um dia civil para o administrador
 - `points`: ledger, saldo, extrato e ajuste administrativo
 - infraestrutura Prisma, fora de `modules`, porque não é um módulo de negócio
 
-Não há catálogo de recompensas, descontos, cupons, produtos, financeiro ou relatórios. O modelo de domínio está em [domain.md](domain.md), a agenda em [scheduling.md](scheduling.md), o agendamento em [appointments.md](appointments.md), os pontos em [loyalty.md](loyalty.md) e o resgate em [points-redemption.md](points-redemption.md).
+Não há catálogo de recompensas, descontos, cupons, produtos, financeiro ou comissão. O painel em `GET /api/v1/admin/dashboard` resume um dia civil; o valor dos serviços é a soma de `priceSnapshot` e não é pagamento. O modelo de domínio está em [domain.md](domain.md), a agenda em [scheduling.md](scheduling.md), o agendamento em [appointments.md](appointments.md), os pontos em [loyalty.md](loyalty.md) e o resgate em [points-redemption.md](points-redemption.md).
 
 Resposta de saúde:
 
@@ -126,7 +127,7 @@ O boot registra a porta e, quando ligada, a rota do Swagger. Cada requisição f
 
 O manifesto chama o aplicativo de Ravion Barber, com `display: standalone`, orientação livre e ícones para celular, tablet e desktop. O service worker faz precache do shell e não implementa fila offline, sincronização ou cache da API.
 
-A página inicial apresenta o nome e a frase "Sistema de gestão para barbearia.". Há também `/login`, `/register`, `/conta`, `/agendar`, `/agendamentos`, `/pontos`, `/profissional`, `/profissional/agenda`, `/profissional/agendamentos` e a administração em `/admin/services`, `/admin/professionals`, `/admin/professionals/:id/schedule`, `/admin/clients`, `/admin/clients/:id/points` e `/admin/appointments`. A camada `src/services` é o único lugar em que o PWA chama a API. O cliente de autenticação não guarda token no `localStorage`.
+A página inicial apresenta o nome e a frase "Sistema de gestão para barbearia.". Há também `/login`, `/register`, `/conta`, `/agendar`, `/agendamentos`, `/pontos`, `/profissional`, `/profissional/agenda`, `/profissional/agendamentos` e a administração em `/admin/dashboard`, `/admin/services`, `/admin/professionals`, `/admin/professionals/:id/schedule`, `/admin/clients`, `/admin/clients/:id/points` e `/admin/appointments`. A camada `src/services` é o único lugar em que o PWA chama a API. O cliente de autenticação não guarda token no `localStorage`.
 
 ## Banco
 
@@ -143,4 +144,4 @@ O tenant separa contextos lógicos de aplicação dentro de um único Ravion Bar
 
 ## Fora de escopo
 
-Catálogo de recompensas, produtos, financeiro, relatórios e o aplicativo Flutter. A disponibilidade continua sendo uma prévia. A reserva definitiva está na criação do agendamento. O saldo de pontos sai do ledger.
+Catálogo de recompensas, produtos, financeiro, comissão e o aplicativo Flutter. O painel do dia está em [dashboard.md](dashboard.md). A disponibilidade continua sendo uma prévia. A reserva definitiva está na criação do agendamento. O saldo de pontos sai do ledger.

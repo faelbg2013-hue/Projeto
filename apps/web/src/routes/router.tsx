@@ -4,6 +4,7 @@ import { RequireRole } from '../auth/RequireRole';
 import { RootLayout } from '../layouts/RootLayout';
 import { AccountPage } from '../pages/AccountPage';
 import { AdminAppointmentsPage } from '../pages/AdminAppointmentsPage';
+import { AdminDashboardPage } from '../pages/AdminDashboardPage';
 import { AdminClientPointsPage } from '../pages/AdminClientPointsPage';
 import { AgendaPage } from '../pages/AgendaPage';
 import { AdminClientsPage } from '../pages/AdminClientsPage';
@@ -50,6 +51,7 @@ export const appRoutes: RouteObject[] = [
           {
             element: <RequireRole roles={['ADMIN']} />,
             children: [
+              { path: 'admin/dashboard', element: <AdminDashboardPage /> },
               { path: 'admin/services', element: <AdminServicesPage /> },
               { path: 'admin/professionals', element: <AdminProfessionalsPage /> },
               { path: 'admin/appointments', element: <AdminAppointmentsPage /> },

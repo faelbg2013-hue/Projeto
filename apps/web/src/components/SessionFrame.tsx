@@ -60,6 +60,7 @@ export function SessionFrame({
 }
 
 export const adminLinks = [
+  { to: '/admin/dashboard', label: 'Painel' },
   { to: '/admin/services', label: 'Serviços' },
   { to: '/admin/professionals', label: 'Profissionais' },
   { to: '/admin/clients', label: 'Clientes' },
