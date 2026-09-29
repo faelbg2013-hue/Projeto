@@ -103,13 +103,13 @@ test('client and professional cannot open the operational dashboard', async ({ p
   await login(page, clientEmail, 'senha-segura');
   await page.goto('/admin/dashboard');
   await expect(page).toHaveURL(/\/conta$/);
-  await expect(page.getByRole('heading', { name: 'Painel' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Painel', exact: true })).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Sair' }).click();
   await login(page, professionalEmail, 'senha-segura');
   await page.goto('/admin/dashboard');
   await expect(page).toHaveURL(/\/conta$/);
-  await expect(page.getByRole('heading', { name: 'Painel' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Painel', exact: true })).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
 });
 
@@ -170,7 +170,10 @@ test('admin filters the day, sees points and normal bookings, and updates status
   const date = nextWeekday(4);
   async function book(professionalId: string, time: string, bookingMode: 'NORMAL' | 'POINTS'): Promise<void> {
     const response = await request.post(`${apiOrigin}/api/v1/appointments`, {
-      headers: { Authorization: `Bearer ${clientToken}`, 'Idempotency-Key': `${stamp}-${time}-${professionalId}` },
+      headers: {
+        Authorization: `Bearer ${clientToken}`,
+        'Idempotency-Key': `dash-${time.replace(':', '')}-${professionalId.slice(0, 8)}-${stamp}`.slice(0, 80),
+      },
       data: { professionalId, serviceId: serviceBody.id, date, time, bookingMode },
     });
     expect(response.status(), await response.text()).toBe(201);
@@ -184,28 +187,25 @@ test('admin filters the day, sees points and normal bookings, and updates status
   await login(page, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
   await page.getByRole('link', { name: 'Painel' }).click();
   await expect(page).toHaveURL(/\/admin\/dashboard$/);
-  await expect(page.getByRole('heading', { name: 'Painel' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Painel', exact: true })).toBeVisible();
   await expect(page.getByText('O Ravion Barber não processa pagamentos.')).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
   await page.getByLabel('Data').fill(date);
+  await page.getByLabel('Profissional').selectOption({ label: displayName });
   await page.getByRole('button', { name: 'Filtrar' }).click();
   const day = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Atendimentos do dia' }) });
-  const pointsCard = day.getByRole('article').filter({ hasText: '10:00' });
-  const normalCard = day.getByRole('article').filter({ hasText: '11:00' });
-  await expect(pointsCard.getByText('50 pontos')).toBeVisible();
+  const pointsCard = day.getByRole('article').filter({ hasText: serviceName }).filter({ hasText: '10:00' });
+  const normalCard = day.getByRole('article').filter({ hasText: serviceName }).filter({ hasText: '11:00' });
+  await expect(pointsCard.getByText('Pontos utilizados: 50 pontos')).toBeVisible();
   await expect(normalCard.getByText('Pontos utilizados: —')).toBeVisible();
-  await expect(page.getByRole('article', { name: 'Valor dos serviços' })).toContainText('R$ 200,00');
-  await expect(page.getByRole('article', { name: 'Pontos utilizados' })).toContainText('50');
+  await expect(page.getByRole('article', { name: 'Valor dos serviços' })).toContainText('R$ 160,00');
+  await expect(page.getByRole('article', { name: 'Pontos utilizados' })).toHaveText(/50/);
+  await expect(day.getByRole('article').filter({ hasText: '14:00' })).toHaveCount(0);
   await expect(
     page.locator('section').filter({ has: page.getByRole('heading', { name: 'Próximos atendimentos' }) }),
   ).toContainText('10:00');
   await expectNoHorizontalOverflow(page);
-
-  await page.getByLabel('Profissional').selectOption({ label: displayName });
-  await page.getByRole('button', { name: 'Filtrar' }).click();
-  await expect(day.getByRole('article').filter({ hasText: '14:00' })).toHaveCount(0);
-  await expect(day.getByRole('article').filter({ hasText: '10:00' })).toBeVisible();
 
   await page.getByLabel('Status').selectOption({ label: 'Confirmados' });
   await page.getByRole('button', { name: 'Filtrar' }).click();
