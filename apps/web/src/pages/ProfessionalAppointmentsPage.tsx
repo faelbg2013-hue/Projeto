@@ -1,16 +1,9 @@
 import type { AppointmentItem, AppointmentStatus } from '@ravion/types';
 import { useEffect, useState, type FormEvent } from 'react';
 import { AppointmentCard } from '../components/AppointmentCard';
-import { SessionFrame } from '../components/SessionFrame';
+import { SessionFrame, professionalLinks } from '../components/SessionFrame';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { appointmentsService } from '../services/appointments.service';
-
-const links = [
-  { to: '/profissional/agendamentos', label: 'Agendamentos' },
-  { to: '/profissional/agenda', label: 'Agenda' },
-  { to: '/profissional', label: 'Área' },
-  { to: '/conta', label: 'Conta' },
-] as const;
 
 const statuses: Array<{ value: '' | AppointmentStatus; label: string }> = [
   { value: '', label: 'Todos' },
@@ -73,7 +66,7 @@ export function ProfessionalAppointmentsPage() {
   }
 
   return (
-    <SessionFrame eyebrow="Profissional" title="Agendamentos" links={links}>
+    <SessionFrame eyebrow="Profissional" title="Agendamentos" links={professionalLinks}>
       <form className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end" onSubmit={onFilter}>
         <label className="flex min-w-0 flex-1 flex-col gap-2 text-[0.68rem] uppercase tracking-[0.28em] text-muted">
           Data

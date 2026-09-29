@@ -59,6 +59,14 @@ export function SessionFrame({
   );
 }
 
+export const professionalLinks = [
+  { to: '/profissional', label: 'Início' },
+  { to: '/profissional/agenda', label: 'Agenda' },
+  { to: '/profissional/agenda/semana', label: 'Horário semanal' },
+  { to: '/profissional/agendamentos', label: 'Agendamentos' },
+  { to: '/conta', label: 'Conta' },
+] as const;
+
 export const adminLinks = [
   { to: '/admin/dashboard', label: 'Painel' },
   { to: '/admin/services', label: 'Serviços' },

@@ -261,6 +261,39 @@ export interface OperationalDashboard {
   professionals: DashboardProfessional[];
 }
 
+export interface ProfessionalDaySummary {
+  total: number;
+  confirmed: number;
+  completed: number;
+  noShow: number;
+  cancelled: number;
+}
+
+export interface ProfessionalDayAppointment {
+  id: string;
+  startAt: string;
+  endAt: string;
+  time: string;
+  endTime: string;
+  clientName: string;
+  serviceName: string;
+  serviceDescription: string | null;
+  durationMinutes: number;
+  price: string;
+  status: AppointmentStatus;
+  bookingMode: BookingMode;
+  redemptionPointsSnapshot: number | null;
+  pointsSnapshot: number;
+}
+
+export interface ProfessionalDay {
+  date: string;
+  summary: ProfessionalDaySummary;
+  nextAppointment: ProfessionalDayAppointment | null;
+  currentAppointment: ProfessionalDayAppointment | null;
+  appointments: ProfessionalDayAppointment[];
+}
+
 export function isUserRole(value: unknown): value is UserRole {
   return typeof value === 'string' && userRoles.some((role) => role === value);
 }

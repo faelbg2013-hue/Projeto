@@ -7,6 +7,7 @@ import { AdminAppointmentsPage } from '../pages/AdminAppointmentsPage';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
 import { AdminClientPointsPage } from '../pages/AdminClientPointsPage';
 import { AgendaPage } from '../pages/AgendaPage';
+import { ProfessionalAgendaPage } from '../pages/ProfessionalAgendaPage';
 import { AdminClientsPage } from '../pages/AdminClientsPage';
 import { AdminProfessionalsPage } from '../pages/AdminProfessionalsPage';
 import { AdminServicesPage } from '../pages/AdminServicesPage';
@@ -44,7 +45,8 @@ export const appRoutes: RouteObject[] = [
             element: <RequireRole roles={['PROFESSIONAL']} />,
             children: [
               { path: 'profissional', element: <ProfessionalPage /> },
-              { path: 'profissional/agenda', element: <AgendaPage scope="me" /> },
+              { path: 'profissional/agenda', element: <ProfessionalAgendaPage /> },
+              { path: 'profissional/agenda/semana', element: <AgendaPage scope="me" /> },
               { path: 'profissional/agendamentos', element: <ProfessionalAppointmentsPage /> },
             ],
           },

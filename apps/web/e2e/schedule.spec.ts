@@ -163,7 +163,7 @@ test('professional edits the own agenda and cannot open administration', async (
   const professional = (await created.json()) as { id: string };
 
   await login(page, email, password);
-  await page.goto('/profissional/agenda');
+  await page.goto('/profissional/agenda/semana');
   await expect(page.getByRole('heading', { name: 'Agenda' })).toBeVisible();
   const tuesday = page.getByRole('region', { name: 'Terça' });
   await tuesday.getByRole('button', { name: 'Adicionar intervalo' }).click();

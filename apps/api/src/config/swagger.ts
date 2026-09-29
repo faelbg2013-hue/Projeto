@@ -21,6 +21,7 @@ Convenções:
 - Cliente, profissional e serviço pertencem ao tenant da sessão. tenantId enviado pelo cliente não autoriza outro contexto.
 - Serviço guarda preço decimal, duração, pontos ganhos na conclusão e, separadamente, pontos necessários para resgate. O agendamento pode ser NORMAL ou POINTS. POINTS debita o ledger na mesma transação. Cancelar devolve esses pontos com REDEEM_REVERSAL. O preço em reais não é pagamento: dinheiro, PIX e cartão ficam fora da aplicação.
 - GET /api/v1/admin/dashboard resume um dia civil em America/Sao_Paulo para o ADMIN do tenant da sessão. O valor dos serviços é a soma de priceSnapshot. Não há caixa, pagamento nem comissão.
+- GET /api/v1/professionals/me/dashboard resume o dia do PROFESSIONAL autenticado, na mesma timezone. O profissional sai da sessão. Não há comissão nem pagamento.
 - Listagens aceitam page e pageSize. O filtro isActive é específico de clientes, profissionais e serviços.
 - O envelope de paginação é { data, meta }, com meta em PaginationMetaDto. A ordenação padrão desses recursos é createdAt descendente.`;
 
@@ -46,7 +47,7 @@ export function buildSwaggerConfig(port: number): Omit<OpenAPIObject, 'paths'> {
     .addTag('auth', 'Cadastro, sessão e usuário autenticado')
     .addTag('users', 'Usuários do tenant autenticado')
     .addTag('clients', 'Perfil operacional de clientes')
-    .addTag('professionals', 'Perfil operacional de profissionais')
+    .addTag('professionals', 'Perfil operacional de profissionais e o dia do profissional autenticado')
     .addTag('schedule', 'Agenda semanal, bloqueios, exceções e disponibilidade')
     .addTag('services', 'Catálogo de serviços')
     .addTag('appointments', 'Agendamentos e proteção contra dupla reserva')

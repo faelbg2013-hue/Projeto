@@ -23,6 +23,7 @@ const accountLinks: Record<UserRole, ReadonlyArray<{ to: string; label: string }
   PROFESSIONAL: [
     { to: '/profissional', label: 'Área profissional' },
     { to: '/profissional/agenda', label: 'Agenda' },
+    { to: '/profissional/agenda/semana', label: 'Horário semanal' },
     { to: '/profissional/agendamentos', label: 'Agendamentos' },
   ],
   ADMIN: [

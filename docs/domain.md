@@ -1,6 +1,6 @@
 # Domínio operacional
 
-Cliente, profissional e serviço são os registros operacionais. A agenda semanal, os bloqueios, as exceções e a disponibilidade estão em [scheduling.md](scheduling.md). O agendamento está em [appointments.md](appointments.md). O ledger de pontos está em [loyalty.md](loyalty.md). O uso de pontos no agendamento está em [points-redemption.md](points-redemption.md). O preço em reais é o valor cadastrado do serviço. Não há pagamento, PIX, cartão ou financeiro. O painel administrativo lê os agendamentos de um dia civil e o ledger; está em [dashboard.md](dashboard.md).
+Cliente, profissional e serviço são os registros operacionais. A agenda semanal, os bloqueios, as exceções e a disponibilidade estão em [scheduling.md](scheduling.md). O agendamento está em [appointments.md](appointments.md). O ledger de pontos está em [loyalty.md](loyalty.md). O uso de pontos no agendamento está em [points-redemption.md](points-redemption.md). O preço em reais é o valor cadastrado do serviço. Não há pagamento, PIX, cartão ou financeiro. O painel administrativo lê os agendamentos de um dia civil e o ledger; está em [dashboard.md](dashboard.md). A área do profissional lê somente o próprio dia; está em [professional-operations.md](professional-operations.md).
 
 O tenant continua sendo o contexto lógico da aplicação, não uma barbearia. O `tenantId` de qualquer um desses registros sai da sessão autenticada. Um valor enviado pelo cliente é rejeitado pelo `ValidationPipe` e não muda o registro.
 

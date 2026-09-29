@@ -47,8 +47,11 @@ export const scheduleService = {
   ): Promise<ProfessionalSchedule> {
     return client.put(`${base(professionalId)}/schedule`, { intervals });
   },
-  listBlocks(professionalId: 'me' | string): Promise<Paginated<TimeBlock>> {
-    return client.get(`${base(professionalId)}/time-blocks`);
+  listBlocks(
+    professionalId: 'me' | string,
+    query: { page?: number; pageSize?: number } = {},
+  ): Promise<Paginated<TimeBlock>> {
+    return client.get(withQuery(`${base(professionalId)}/time-blocks`, query));
   },
   createBlock(professionalId: 'me' | string, input: TimeBlockInput): Promise<TimeBlock> {
     return client.post(`${base(professionalId)}/time-blocks`, input);

@@ -2,7 +2,7 @@ import type { ScheduleException, ServiceItem, TimeBlock } from '@ravion/types';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router';
 import { Field } from '../components/Field';
-import { SessionFrame, adminLinks } from '../components/SessionFrame';
+import { SessionFrame, adminLinks, professionalLinks } from '../components/SessionFrame';
 import { useActiveServices } from '../hooks/useActiveServices';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { ApiClientError } from '../services/api';
@@ -299,10 +299,7 @@ export function AgendaPage({ scope }: { scope: 'me' | 'admin' }) {
   const links =
     scope === 'admin'
       ? adminLinks
-      : [
-          { to: '/profissional', label: 'Perfil' },
-          { to: '/conta', label: 'Conta' },
-        ];
+      : professionalLinks;
 
   return (
     <SessionFrame eyebrow={scope === 'admin' ? 'Administração' : 'Profissional'} title="Agenda" links={links}>
