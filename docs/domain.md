@@ -1,6 +1,6 @@
 # Domínio operacional
 
-Cliente, profissional e serviço são os registros operacionais. A agenda semanal, os bloqueios, as exceções e a disponibilidade estão em [scheduling.md](scheduling.md). Ainda não há agendamento, reserva, saldo de pontos, pagamento ou financeiro.
+Cliente, profissional e serviço são os registros operacionais. A agenda semanal, os bloqueios, as exceções e a disponibilidade estão em [scheduling.md](scheduling.md). O agendamento está em [appointments.md](appointments.md). Ainda não há saldo de pontos, pagamento ou financeiro.
 
 O tenant continua sendo o contexto lógico da aplicação, não uma barbearia. O `tenantId` de qualquer um desses registros sai da sessão autenticada. Um valor enviado pelo cliente é rejeitado pelo `ValidationPipe` e não muda o registro.
 
@@ -9,7 +9,8 @@ Tenant
 ├── Users
 │   ├── Client?          role CLIENT
 │   └── Professional?    role PROFESSIONAL
-└── Services
+├── Services
+└── Appointments         client + professional + service, com snapshot do serviço
 ```
 
 Nome, e-mail e senha ficam em `User`. `Client` e `Professional` não copiam esses dados. A resposta nunca inclui `passwordHash`.
@@ -39,14 +40,15 @@ Somente `ADMIN` cria profissional. A operação cria o `User` com papel `PROFESS
 
 Desativar coloca `isActive = false` e preserva o registro para o histórico futuro. O usuário não é apagado.
 
-| Método | Rota                        | Quem         |
-| ------ | --------------------------- | ------------ |
-| GET    | `/api/v1/professionals/me`  | PROFESSIONAL |
-| GET    | `/api/v1/professionals`     | ADMIN        |
-| POST   | `/api/v1/professionals`     | ADMIN        |
-| GET    | `/api/v1/professionals/:id` | ADMIN        |
-| PATCH  | `/api/v1/professionals/:id` | ADMIN        |
-| DELETE | `/api/v1/professionals/:id` | ADMIN        |
+| Método | Rota                             | Quem                                                |
+| ------ | -------------------------------- | --------------------------------------------------- |
+| GET    | `/api/v1/professionals/me`       | PROFESSIONAL                                        |
+| GET    | `/api/v1/professionals/bookable` | CLIENT, PROFESSIONAL e ADMIN. Só ativos, sem e-mail |
+| GET    | `/api/v1/professionals`          | ADMIN                                               |
+| POST   | `/api/v1/professionals`          | ADMIN                                               |
+| GET    | `/api/v1/professionals/:id`      | ADMIN                                               |
+| PATCH  | `/api/v1/professionals/:id`      | ADMIN                                               |
+| DELETE | `/api/v1/professionals/:id`      | ADMIN                                               |
 
 `DELETE` desativa. Não remove a linha. `PROFESSIONAL` não consulta outro profissional.
 

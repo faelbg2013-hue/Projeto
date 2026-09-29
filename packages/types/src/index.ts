@@ -148,6 +148,36 @@ export interface Availability {
   slots: string[];
 }
 
+export type AppointmentStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+
+export interface AppointmentItem {
+  id: string;
+  tenantId: string;
+  clientId: string;
+  professionalId: string;
+  serviceId: string;
+  clientName: string;
+  professionalName: string;
+  serviceName: string;
+  price: string;
+  durationMinutes: number;
+  date: string;
+  time: string;
+  startAt: string;
+  endAt: string;
+  status: AppointmentStatus;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  cancelledAt: string | null;
+  completedAt: string | null;
+}
+
+export interface BookableProfessional {
+  id: string;
+  displayName: string;
+}
+
 export function isUserRole(value: unknown): value is UserRole {
   return typeof value === 'string' && userRoles.some((role) => role === value);
 }

@@ -18,6 +18,14 @@ enum ScheduleExceptionType {
   OPEN
 }
 
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
 model Tenant {
   id        String        @id @default(uuid()) @db.Char(36)
   name      String        @db.VarChar(120)
@@ -33,6 +41,7 @@ model Tenant {
   schedules            ProfessionalSchedule[]
   timeBlocks           ProfessionalTimeBlock[]
   scheduleExceptions   ProfessionalScheduleException[]
+  appointments         Appointment[]
 
   @@map("tenants")
 }
@@ -81,8 +90,9 @@ model Client {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
 
   @@unique([tenantId, userId])
   @@index([tenantId])
@@ -102,6 +112,7 @@ model Professional {
   schedules          ProfessionalSchedule[]
   timeBlocks         ProfessionalTimeBlock[]
   scheduleExceptions ProfessionalScheduleException[]
+  appointments       Appointment[]
 
   @@unique([tenantId, userId])
   @@index([tenantId])
@@ -173,8 +184,39 @@ model Service {
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  appointments Appointment[]
 
   @@index([tenantId])
   @@map("services")
+}
+
+/// Atendimento preservado. Preço, nome e duração são o serviço no momento da criação.
+model Appointment {
+  id                              String            @id @default(uuid()) @db.Char(36)
+  tenantId                        String            @db.Char(36)
+  clientId                        String            @db.Char(36)
+  professionalId                  String            @db.Char(36)
+  serviceId                       String            @db.Char(36)
+  startAt                         DateTime
+  endAt                           DateTime
+  status                          AppointmentStatus @default(CONFIRMED)
+  notes                           String?           @db.VarChar(500)
+  serviceNameSnapshot             String            @db.VarChar(120)
+  servicePriceSnapshot            Decimal           @db.Decimal(10, 2)
+  serviceDurationMinutesSnapshot  Int
+  idempotencyKey                  String?           @db.VarChar(80)
+  cancelledAt                     DateTime?
+  completedAt                     DateTime?
+  createdAt                       DateTime          @default(now())
+  updatedAt                       DateTime          @updatedAt
+  tenant                          Tenant            @relation(fields: [tenantId], references: [id])
+  client                          Client            @relation(fields: [clientId], references: [id])
+  professional                    Professional      @relation(fields: [professionalId], references: [id])
+  service                         Service           @relation(fields: [serviceId], references: [id])
+
+  @@unique([tenantId, clientId, idempotencyKey])
+  @@index([tenantId, professionalId, startAt])
+  @@index([tenantId, clientId, startAt])
+  @@map("appointments")
 }

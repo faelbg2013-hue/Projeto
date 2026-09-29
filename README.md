@@ -1,6 +1,6 @@
 # Ravion Barber
 
-Plataforma de gestão para barbearia. A fundação técnica está no ar, com usuários, autenticação, papéis, clientes, profissionais, serviços, agenda e isolamento por tenant. Agendamento e fidelidade continuam fora.
+Plataforma de gestão para barbearia. A fundação técnica está no ar, com usuários, autenticação, papéis, clientes, profissionais, serviços, agenda, agendamento e isolamento por tenant. Fidelidade continua fora.
 
 O futuro aplicativo mobile do Ravion Barber será desenvolvido em Flutter utilizando Dart e consumirá a mesma REST API utilizada pela aplicação PWA.
 
@@ -20,7 +20,7 @@ PWA Web (React + Vite + TypeScript)
 
 A API é a única dona das regras de negócio. O PWA e o futuro aplicativo Flutter conversam com ela apenas por HTTP/OpenAPI. Não há compartilhamento de código TypeScript com o Flutter.
 
-Detalhes em [docs/architecture.md](docs/architecture.md), [docs/authentication.md](docs/authentication.md) e [docs/domain.md](docs/domain.md).
+Detalhes em [docs/architecture.md](docs/architecture.md), [docs/authentication.md](docs/authentication.md), [docs/domain.md](docs/domain.md) e [docs/appointments.md](docs/appointments.md).
 
 ## Stack
 
@@ -95,7 +95,7 @@ pnpm db:migrate
 pnpm db:seed
 ```
 
-O seed cria o tenant, o administrador, um cliente, um profissional e os serviços Corte, Barba e Corte + Barba. Rodar de novo não duplica e não redefine senha. Clientes do tenant de desenvolvimento que ainda não tinham perfil recebem um `Client`. A conexão também é validada na inicialização da API com `SELECT 1`.
+O seed cria o tenant, o administrador, um cliente, um profissional e os serviços Corte, Barba e Corte + Barba. Se o profissional de desenvolvimento ainda não tem agendamento, cria um confirmado na próxima segunda às 10:00. Rodar de novo não duplica e não redefine senha. Clientes do tenant de desenvolvimento que ainda não tinham perfil recebem um `Client`. A conexão também é validada na inicialização da API com `SELECT 1`.
 
 ## Execução da API
 
@@ -116,7 +116,7 @@ Em `NODE_ENV=production`, a documentação fica desligada, a menos que `SWAGGER_
 pnpm dev:web
 ```
 
-Abra `http://127.0.0.1:43110`. A página inicial apresenta o Ravion Barber. Entrar e criar conta ficam em `/login` e `/register`. A conta fica em `/conta`. O profissional autenticado usa `/profissional`. O administrador usa `/admin/services`, `/admin/professionals` e `/admin/clients`. O app é um PWA instalável, com manifesto e service worker de cache do shell. Não há modo offline de dados. O navegador usa o proxy `/api`, então o cookie de sessão permanece HttpOnly.
+Abra `http://127.0.0.1:43110`. A página inicial apresenta o Ravion Barber. Entrar e criar conta ficam em `/login` e `/register`. A conta fica em `/conta`. O cliente agenda em `/agendar` e vê os próprios horários em `/agendamentos`. O profissional autenticado usa `/profissional`, `/profissional/agenda` e `/profissional/agendamentos`. O administrador usa `/admin/services`, `/admin/professionals`, `/admin/clients` e `/admin/appointments`. O app é um PWA instalável, com manifesto e service worker de cache do shell. Não há modo offline de dados. O navegador usa o proxy `/api`, então o cookie de sessão permanece HttpOnly.
 
 Para subir API e PWA juntos:
 
@@ -141,4 +141,4 @@ pnpm --filter @ravion/web exec playwright install chromium
 
 ## O que ainda não existe
 
-Agendamento, reserva, saldo de pontos, produtos, financeiro, relatórios e o aplicativo Flutter. A disponibilidade consulta horários e não reserva. O diretório `apps/mobile` será criado apenas quando o desenvolvimento mobile começar. O Flutter usará esta mesma API. A agenda está descrita em [docs/scheduling.md](docs/scheduling.md).
+Saldo de pontos, produtos, financeiro, relatórios e o aplicativo Flutter. A disponibilidade consulta horários e não reserva; a reserva acontece em `POST /api/v1/appointments`. O diretório `apps/mobile` será criado apenas quando o desenvolvimento mobile começar. O Flutter usará esta mesma API. A agenda está descrita em [docs/scheduling.md](docs/scheduling.md) e o agendamento em [docs/appointments.md](docs/appointments.md).

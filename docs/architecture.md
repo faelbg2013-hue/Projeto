@@ -19,7 +19,7 @@ React + Vite + TypeScript
       MySQL
 ```
 
-A tecnologia do cliente não define regra de negócio. Um endpoint futuro como `POST /api/v1/appointments` responderá da mesma forma para o navegador, para o PWA e para o Flutter.
+A tecnologia do cliente não define regra de negócio. `POST /api/v1/appointments` responde da mesma forma para o navegador, para o PWA e para o Flutter.
 
 Não haverá backend separado para o aplicativo Flutter.
 
@@ -54,9 +54,10 @@ Módulos atuais:
 - `professionals`: perfil operacional do profissional
 - `schedule`: agenda semanal, bloqueios, exceções e disponibilidade
 - `services`: catálogo com preço, duração e pontuação configurável
+- `appointments`: criação, consulta, cancelamento, conclusão e não comparecimento
 - infraestrutura Prisma, fora de `modules`, porque não é um módulo de negócio
 
-Não há agendamento, reserva, saldo de pontos, produtos, financeiro ou relatórios. O modelo de domínio está em [domain.md](domain.md) e a agenda em [scheduling.md](scheduling.md).
+Não há saldo de pontos, produtos, financeiro ou relatórios. O modelo de domínio está em [domain.md](domain.md), a agenda em [scheduling.md](scheduling.md) e o agendamento em [appointments.md](appointments.md).
 
 Resposta de saúde:
 
@@ -124,11 +125,11 @@ O boot registra a porta e, quando ligada, a rota do Swagger. Cada requisição f
 
 O manifesto chama o aplicativo de Ravion Barber, com `display: standalone`, orientação livre e ícones para celular, tablet e desktop. O service worker faz precache do shell e não implementa fila offline, sincronização ou cache da API.
 
-A página inicial apresenta o nome e a frase "Sistema de gestão para barbearia.". Há também `/login`, `/register`, `/conta`, `/profissional`, `/profissional/agenda` e a administração em `/admin/services`, `/admin/professionals`, `/admin/professionals/:id/schedule` e `/admin/clients`. A camada `src/services` é o único lugar em que o PWA chama a API. O cliente de autenticação não guarda token no `localStorage`.
+A página inicial apresenta o nome e a frase "Sistema de gestão para barbearia.". Há também `/login`, `/register`, `/conta`, `/agendar`, `/agendamentos`, `/profissional`, `/profissional/agenda`, `/profissional/agendamentos` e a administração em `/admin/services`, `/admin/professionals`, `/admin/professionals/:id/schedule`, `/admin/clients` e `/admin/appointments`. A camada `src/services` é o único lugar em que o PWA chama a API. O cliente de autenticação não guarda token no `localStorage`.
 
 ## Banco
 
-`docker-compose.yml` sobe MySQL 8.4 para desenvolvimento. Usuário, senha, database e porta vêm do ambiente. O schema tem `tenants`, `users`, `user_sessions`, `clients`, `professionals`, `services`, `professional_schedules`, `professional_time_blocks` e `professional_schedule_exceptions`. O e-mail é único por tenant, não no sistema inteiro. O slug do tenant é único. Cliente e profissional são únicos por usuário e também por `(tenantId, userId)`. As migrations ficam em `prisma/migrations`; o fluxo é `prisma migrate dev`, não `db push`.
+`docker-compose.yml` sobe MySQL 8.4 para desenvolvimento. Usuário, senha, database e porta vêm do ambiente. O schema tem `tenants`, `users`, `user_sessions`, `clients`, `professionals`, `services`, `professional_schedules`, `professional_time_blocks`, `professional_schedule_exceptions` e `appointments`. O e-mail é único por tenant, não no sistema inteiro. O slug do tenant é único. Cliente e profissional são únicos por usuário e também por `(tenantId, userId)`. Agendamento referencia tenant, cliente, profissional e serviço com `ON DELETE RESTRICT`. As migrations ficam em `prisma/migrations`; o fluxo é `prisma migrate dev`, não `db push`.
 
 ## Tenant
 
@@ -136,9 +137,9 @@ O tenant separa contextos lógicos de aplicação dentro de um único Ravion Bar
 
 ## Testes
 
-- Vitest cobre contratos, validação de ambiente, health, filtro de erro, redação de log, OpenAPI, senha, guards, isolamento entre tenants, clientes, profissionais, serviços, agenda e as telas de autenticação.
-- Playwright percorre a home, o login, o cadastro, a conta, a área do profissional, a agenda e a administração em 360, 390, 768, 1024 e 1440 pixels.
+- Vitest cobre contratos, validação de ambiente, health, filtro de erro, redação de log, OpenAPI, senha, guards, isolamento entre tenants, clientes, profissionais, serviços, agenda, agendamentos e as telas de autenticação.
+- Playwright percorre a home, o login, o cadastro, a conta, a área do profissional, a agenda, o agendamento e a administração em 360, 390, 768, 1024 e 1440 pixels.
 
 ## Fora de escopo
 
-Agendamento, reserva, saldo e extrato de pontos, produtos, financeiro, relatórios e o aplicativo Flutter. A disponibilidade já existe e não reserva horário.
+Saldo e extrato de pontos, produtos, financeiro, relatórios e o aplicativo Flutter. A disponibilidade continua sendo uma prévia. A reserva definitiva está na criação do agendamento.

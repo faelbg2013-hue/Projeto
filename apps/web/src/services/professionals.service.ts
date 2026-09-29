@@ -1,4 +1,4 @@
-import type { Paginated, ProfessionalProfile } from '@ravion/types';
+import type { BookableProfessional, Paginated, ProfessionalProfile } from '@ravion/types';
 import { env } from '../lib/env';
 import { ApiClient } from './api';
 import { withQuery } from './query';
@@ -24,6 +24,9 @@ export const professionalsService = {
   },
   list(query: ProfessionalListQuery = {}): Promise<Paginated<ProfessionalProfile>> {
     return client.get(withQuery('/api/v1/professionals', query));
+  },
+  bookable(query: { page?: number; pageSize?: number } = {}): Promise<Paginated<BookableProfessional>> {
+    return client.get(withQuery('/api/v1/professionals/bookable', query));
   },
   create(input: ProfessionalInput): Promise<ProfessionalProfile> {
     return client.post('/api/v1/professionals', input);

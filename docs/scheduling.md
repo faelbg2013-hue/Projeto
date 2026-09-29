@@ -1,6 +1,6 @@
 # Agenda e disponibilidade
 
-A agenda pertence ao profissional. O serviço só entra no cálculo pela duração. Esta fase não cria agendamento, reserva, confirmação, pagamento, cancelamento, reagendamento, saldo de pontos, comissão ou notificação.
+A agenda pertence ao profissional. O serviço só entra no cálculo pela duração. O agendamento que usa esses horários está em [appointments.md](appointments.md). Esta agenda não confirma, não cancela e não cobra.
 
 O futuro aplicativo mobile do Ravion Barber será desenvolvido em Flutter utilizando Dart e consumirá a mesma REST API utilizada pela aplicação PWA. O contrato é o OpenAPI em `/api/docs`.
 
@@ -91,7 +91,7 @@ Uma data por requisição. Não há `startDate` nem `endDate`.
 - Profissional de outro tenant, inexistente ou com `isActive = false` responde 404 `Recurso não encontrado`, para qualquer papel, inclusive ADMIN. A agenda desse profissional ainda pode ser editada por um ADMIN, para configurar antes de reativar.
 - Serviço de outro tenant, inexistente ou inativo responde 404 para CLIENT, PROFESSIONAL e ADMIN.
 
-A consulta é leitura. Não reserva o horário e não exige um agendamento anterior.
+A consulta é leitura. Não reserva o horário. Quem grava o agendamento é que torna a escolha definitiva.
 
 ## Quem altera
 
@@ -105,6 +105,8 @@ A consulta é leitura. Não reserva o horário e não exige um agendamento anter
 
 Rotas `me/...` ficam registradas antes de `:id/...`.
 
-## Fase 05
+## Agendamentos na disponibilidade
 
-`calculateAvailability` aceita `occupied`. A Fase 05 deve passar os agendamentos confirmados ali, sem reescrever o motor. Esta fase não cria tabela de appointment, não reserva e não trava o banco. A consulta de disponibilidade não impede duas escolhas simultâneas. A proteção contra dupla reserva entra na gravação do agendamento, na fase seguinte.
+`GET /availability` e `POST /appointments` usam o mesmo `computeSlots`. A lista `occupied` traz os agendamentos do profissional que cruzam o dia e estão em `PENDING`, `CONFIRMED`, `COMPLETED` ou `NO_SHOW`. `CANCELLED` não entra, então o horário volta a aparecer.
+
+A consulta continua sem travar o banco. Duas leituras simultâneas podem mostrar o mesmo horário. A proteção está na transação de criação, descrita em [appointments.md](appointments.md): a linha do profissional é bloqueada com `SELECT ... FOR UPDATE` e a disponibilidade é calculada de novo antes do insert.

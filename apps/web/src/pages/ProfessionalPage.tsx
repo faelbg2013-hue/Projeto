@@ -39,6 +39,7 @@ export function ProfessionalPage() {
       eyebrow="Profissional"
       title={title}
       links={[
+        { to: '/profissional/agendamentos', label: 'Agendamentos' },
         { to: '/profissional/agenda', label: 'Agenda' },
         { to: '/conta', label: 'Conta' },
       ]}

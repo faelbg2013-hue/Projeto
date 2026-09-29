@@ -1,4 +1,5 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { AppointmentStatus, type Prisma } from '@prisma/client';
 import type {
   AuthUser,
   Availability,
@@ -32,6 +33,15 @@ import type {
 } from './dto/schedule.dto';
 
 const NOT_FOUND = 'Recurso não encontrado';
+
+export const OCCUPYING_APPOINTMENT_STATUSES = [
+  AppointmentStatus.PENDING,
+  AppointmentStatus.CONFIRMED,
+  AppointmentStatus.COMPLETED,
+  AppointmentStatus.NO_SHOW,
+] as const;
+
+type ScheduleReader = Prisma.TransactionClient | PrismaService;
 const INVALID_RANGE = 'O horário inicial precisa ser anterior ao horário final.';
 const INTERVAL_OVERLAP = 'Os intervalos se sobrepõem.';
 const BLOCK_OVERLAP = 'Os bloqueios se sobrepõem.';
@@ -320,46 +330,68 @@ export class ScheduleService {
       return empty;
     }
 
-    const weekly = await this.prisma.professionalSchedule.findMany({
-      where: {
+    return {
+      ...empty,
+      slots: await this.computeSlots(this.prisma, {
         tenantId: actor.tenantId,
         professionalId,
-        dayOfWeek: dayOfWeek(date),
+        date,
+        durationMinutes: service.durationMinutes,
+      }),
+    };
+  }
+
+  async computeSlots(
+    db: ScheduleReader,
+    input: { tenantId: string; professionalId: string; date: string; durationMinutes: number },
+  ): Promise<string[]> {
+    const bounds = dayBounds(input.date);
+    const weekly = await db.professionalSchedule.findMany({
+      where: {
+        tenantId: input.tenantId,
+        professionalId: input.professionalId,
+        dayOfWeek: dayOfWeek(input.date),
         isActive: true,
       },
     });
-    const exceptions = await this.prisma.professionalScheduleException.findMany({
-      where: { tenantId: actor.tenantId, professionalId, date },
+    const exceptions = await db.professionalScheduleException.findMany({
+      where: { tenantId: input.tenantId, professionalId: input.professionalId, date: input.date },
     });
-    const bounds = dayBounds(date);
-    const blocks = await this.prisma.professionalTimeBlock.findMany({
+    const blocks = await db.professionalTimeBlock.findMany({
       where: {
-        tenantId: actor.tenantId,
-        professionalId,
+        tenantId: input.tenantId,
+        professionalId: input.professionalId,
         startAt: { lt: bounds.endAt },
         endAt: { gt: bounds.startAt },
       },
     });
+    const occupied = await db.appointment.findMany({
+      where: {
+        tenantId: input.tenantId,
+        professionalId: input.professionalId,
+        status: { in: [...OCCUPYING_APPOINTMENT_STATUSES] },
+        startAt: { lt: bounds.endAt },
+        endAt: { gt: bounds.startAt },
+      },
+      select: { startAt: true, endAt: true },
+    });
 
-    return {
-      ...empty,
-      slots: calculateAvailability({
-        date,
-        durationMinutes: service.durationMinutes,
-        stepMinutes: SLOT_STEP_MINUTES,
-        weekly: weekly.map((row) => ({
-          start: parseWallTime(row.startTime),
-          end: parseWallTime(row.endTime),
-        })),
-        exceptions: exceptions.map((row) => ({
-          type: row.type,
-          start: row.startTime === null ? null : parseWallTime(row.startTime),
-          end: row.endTime === null ? null : parseWallTime(row.endTime),
-        })),
-        blocks: blocks.map((row) => ({ startAt: row.startAt, endAt: row.endAt })),
-        occupied: [],
-      }),
-    };
+    return calculateAvailability({
+      date: input.date,
+      durationMinutes: input.durationMinutes,
+      stepMinutes: SLOT_STEP_MINUTES,
+      weekly: weekly.map((row) => ({
+        start: parseWallTime(row.startTime),
+        end: parseWallTime(row.endTime),
+      })),
+      exceptions: exceptions.map((row) => ({
+        type: row.type,
+        start: row.startTime === null ? null : parseWallTime(row.startTime),
+        end: row.endTime === null ? null : parseWallTime(row.endTime),
+      })),
+      blocks: blocks.map((row) => ({ startAt: row.startAt, endAt: row.endAt })),
+      occupied,
+    });
   }
 
   private async readSchedule(professionalId: string, tenantId: string): Promise<ProfessionalSchedule> {

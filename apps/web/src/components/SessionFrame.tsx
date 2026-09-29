@@ -63,5 +63,6 @@ export const adminLinks = [
   { to: '/admin/services', label: 'Serviços' },
   { to: '/admin/professionals', label: 'Profissionais' },
   { to: '/admin/clients', label: 'Clientes' },
+  { to: '/admin/appointments', label: 'Agendamentos' },
   { to: '/conta', label: 'Conta' },
 ] as const;

@@ -2,6 +2,12 @@ import { resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { config as loadDotenv } from 'dotenv';
 import { PasswordService } from '../apps/api/src/common/auth/password.service';
+import {
+  addDays,
+  nextOrSameDate,
+  parseScheduleInstant,
+  todayInScheduleZone,
+} from '../apps/api/src/common/time/schedule-clock';
 
 loadDotenv({ path: resolve(__dirname, '../.env') });
 
@@ -87,6 +93,12 @@ async function main(): Promise<void> {
     await ensureSchedule(prisma, tenant.id, readEnv('SEED_PROFESSIONAL_EMAIL').toLowerCase());
     await backfillClientProfiles(prisma, tenant.id);
     await ensureServices(prisma, tenant.id);
+    await ensureDevelopmentAppointment(
+      prisma,
+      tenant.id,
+      readEnv('SEED_CLIENT_EMAIL').toLowerCase(),
+      readEnv('SEED_PROFESSIONAL_EMAIL').toLowerCase(),
+    );
 
     console.log(`Tenant pronto: ${tenant.slug}`);
     console.log('Administrador pronto');
@@ -94,6 +106,7 @@ async function main(): Promise<void> {
     console.log('Profissional de teste pronto');
     console.log('Serviços de desenvolvimento prontos');
     console.log('Agenda de desenvolvimento pronta');
+    console.log('Agendamento de desenvolvimento pronto');
   } finally {
     await prisma.$disconnect();
   }
@@ -262,6 +275,65 @@ async function ensureServices(prisma: PrismaClient, tenantId: string): Promise<v
       });
     }
   }
+}
+
+async function ensureDevelopmentAppointment(
+  prisma: PrismaClient,
+  tenantId: string,
+  clientEmail: string,
+  professionalEmail: string,
+): Promise<void> {
+  const clientUser = await prisma.user.findUnique({
+    where: { tenantId_email: { tenantId, email: clientEmail } },
+  });
+  const professionalUser = await prisma.user.findUnique({
+    where: { tenantId_email: { tenantId, email: professionalEmail } },
+  });
+  if (!clientUser || !professionalUser) {
+    return;
+  }
+  const client = await prisma.client.findUnique({ where: { userId: clientUser.id } });
+  const professional = await prisma.professional.findUnique({
+    where: { userId: professionalUser.id },
+  });
+  if (!client || !professional) {
+    return;
+  }
+  const existing = await prisma.appointment.count({
+    where: { professionalId: professional.id },
+  });
+  if (existing > 0) {
+    return;
+  }
+  const service = await prisma.service.findFirst({
+    where: { tenantId, name: 'Corte', isActive: true },
+  });
+  if (!service) {
+    return;
+  }
+
+  let date = nextOrSameDate(todayInScheduleZone(), 1);
+  let startAt = parseScheduleInstant(`${date}T10:00:00`);
+  if (startAt.getTime() <= Date.now()) {
+    date = addDays(date, 7);
+    startAt = parseScheduleInstant(`${date}T10:00:00`);
+  }
+  const endAt = new Date(startAt.getTime() + service.durationMinutes * 60_000);
+  await prisma.appointment.create({
+    data: {
+      tenantId,
+      clientId: client.id,
+      professionalId: professional.id,
+      serviceId: service.id,
+      startAt,
+      endAt,
+      status: 'CONFIRMED',
+      notes: 'Agendamento de desenvolvimento',
+      serviceNameSnapshot: service.name,
+      servicePriceSnapshot: service.price,
+      serviceDurationMinutesSnapshot: service.durationMinutes,
+    },
+  });
 }
 
 void main().catch((error: unknown) => {

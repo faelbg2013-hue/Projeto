@@ -23,14 +23,25 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { UserRole, type AuthUser, type Paginated, type ProfessionalProfile } from '@ravion/types';
+import {
+  UserRole,
+  type AuthUser,
+  type BookableProfessional,
+  type Paginated,
+  type ProfessionalProfile,
+} from '@ravion/types';
 import { CurrentUser } from '../../common/auth/current-user.decorator';
 import { Roles } from '../../common/auth/roles.decorator';
 import { ActiveListQueryDto } from '../../common/dto/active-list.query';
+import { PaginationQueryDto } from '../../common/dto/pagination.query';
 import { ApiErrorResponseDto } from '../../common/dto/api-error.response';
 import { bodyPipe, queryPipe } from '../../common/validation/body.pipe';
 import { CreateProfessionalDto } from './dto/create-professional.dto';
-import { PaginatedProfessionalsDto, ProfessionalResponseDto } from './dto/professional.response';
+import {
+  PaginatedBookableProfessionalsDto,
+  PaginatedProfessionalsDto,
+  ProfessionalResponseDto,
+} from './dto/professional.response';
 import { UpdateProfessionalDto } from './dto/update-professional.dto';
 import { ProfessionalsService } from './professionals.service';
 
@@ -55,6 +66,24 @@ export class ProfessionalsController {
   @ApiNotFoundResponse({ type: ApiErrorResponseDto })
   findMine(@CurrentUser() actor: AuthUser): Promise<ProfessionalProfile> {
     return this.professionalsService.findMine(actor);
+  }
+
+  @Get('bookable')
+  @Roles(UserRole.CLIENT, UserRole.PROFESSIONAL, UserRole.ADMIN)
+  @ApiOperation({
+    operationId: 'listBookableProfessionals',
+    summary: 'Lista profissionais ativos para agendamento',
+    description: 'CLIENT, PROFESSIONAL e ADMIN. Só o id e o nome de exibição. Sem e-mail e sem senha.',
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number, example: 20 })
+  @ApiOkResponse({ type: PaginatedBookableProfessionalsDto })
+  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
+  listBookable(
+    @CurrentUser() actor: AuthUser,
+    @Query(queryPipe(PaginationQueryDto)) query: PaginationQueryDto,
+  ): Promise<Paginated<BookableProfessional>> {
+    return this.professionalsService.listBookable(actor, query);
   }
 
   @Get()

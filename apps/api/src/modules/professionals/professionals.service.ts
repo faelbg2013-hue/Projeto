@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { AuthUser, Paginated, ProfessionalProfile } from '@ravion/types';
+import type { AuthUser, BookableProfessional, Paginated, ProfessionalProfile } from '@ravion/types';
 import { UserRole } from '@ravion/types';
 import { operationalUserSelect, toOperationalUser } from '../../common/auth/operational-user';
 import { PasswordService } from '../../common/auth/password.service';
@@ -74,6 +74,25 @@ export class ProfessionalsService {
     ]);
     return {
       data: rows.map((row) => toProfessional(row)),
+      meta: pageMeta(window.page, window.pageSize, total),
+    };
+  }
+
+  async listBookable(actor: AuthUser, query: { page?: number; pageSize?: number }): Promise<Paginated<BookableProfessional>> {
+    const window = pageWindow(query);
+    const where = { tenantId: actor.tenantId, isActive: true };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.professional.findMany({
+        where,
+        orderBy: { displayName: 'asc' },
+        skip: window.skip,
+        take: window.pageSize,
+        select: { id: true, displayName: true },
+      }),
+      this.prisma.professional.count({ where }),
+    ]);
+    return {
+      data: rows,
       meta: pageMeta(window.page, window.pageSize, total),
     };
   }

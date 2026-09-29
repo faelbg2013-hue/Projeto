@@ -3,13 +3,17 @@ import { RequireAuth } from '../auth/RequireAuth';
 import { RequireRole } from '../auth/RequireRole';
 import { RootLayout } from '../layouts/RootLayout';
 import { AccountPage } from '../pages/AccountPage';
+import { AdminAppointmentsPage } from '../pages/AdminAppointmentsPage';
 import { AgendaPage } from '../pages/AgendaPage';
 import { AdminClientsPage } from '../pages/AdminClientsPage';
 import { AdminProfessionalsPage } from '../pages/AdminProfessionalsPage';
 import { AdminServicesPage } from '../pages/AdminServicesPage';
+import { BookingPage } from '../pages/BookingPage';
 import { HomePage } from '../pages/HomePage';
 import { LoginPage } from '../pages/LoginPage';
+import { MyAppointmentsPage } from '../pages/MyAppointmentsPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
+import { ProfessionalAppointmentsPage } from '../pages/ProfessionalAppointmentsPage';
 import { ProfessionalPage } from '../pages/ProfessionalPage';
 import { RegisterPage } from '../pages/RegisterPage';
 
@@ -26,10 +30,18 @@ export const appRoutes: RouteObject[] = [
         children: [
           { path: 'conta', element: <AccountPage /> },
           {
+            element: <RequireRole roles={['CLIENT']} />,
+            children: [
+              { path: 'agendar', element: <BookingPage /> },
+              { path: 'agendamentos', element: <MyAppointmentsPage /> },
+            ],
+          },
+          {
             element: <RequireRole roles={['PROFESSIONAL']} />,
             children: [
               { path: 'profissional', element: <ProfessionalPage /> },
               { path: 'profissional/agenda', element: <AgendaPage scope="me" /> },
+              { path: 'profissional/agendamentos', element: <ProfessionalAppointmentsPage /> },
             ],
           },
           {
@@ -37,6 +49,7 @@ export const appRoutes: RouteObject[] = [
             children: [
               { path: 'admin/services', element: <AdminServicesPage /> },
               { path: 'admin/professionals', element: <AdminProfessionalsPage /> },
+              { path: 'admin/appointments', element: <AdminAppointmentsPage /> },
               {
                 path: 'admin/professionals/:professionalId/schedule',
                 element: <AgendaPage scope="admin" />,
