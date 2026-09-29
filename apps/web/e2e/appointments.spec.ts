@@ -86,7 +86,7 @@ async function openWeek(
       })),
     },
   });
-  expect(saved.status()).toBe(200);
+  expect(saved.status(), await saved.text()).toBe(200);
 }
 
 test('client books, sees the summary and cancels into history', async ({ page, request }, testInfo) => {
@@ -357,16 +357,17 @@ test('admin filters appointments and updates status', async ({ page, request }, 
   await page.getByLabel('Data').fill(date);
   await page.getByLabel('Status').selectOption({ label: 'Confirmado' });
   await page.getByRole('button', { name: 'Filtrar' }).click();
-  await expect(page.getByRole('article').filter({ hasText: '16:00' })).toBeVisible();
+  const mine = page.getByRole('article').filter({ hasText: serviceName });
+  await expect(mine.filter({ hasText: '16:00' })).toBeVisible();
   await page.getByLabel('Status').selectOption({ label: 'Todos' });
   await page.getByRole('button', { name: 'Filtrar' }).click();
 
-  const at1600 = page.getByRole('article').filter({ hasText: '16:00' });
+  const at1600 = mine.filter({ hasText: '16:00' });
   await expect(at1600.getByText(serviceName)).toBeVisible();
   await at1600.getByRole('button', { name: 'Concluir' }).click();
   await expect(at1600.getByText('Concluído')).toBeVisible();
 
-  const at1630 = page.getByRole('article').filter({ hasText: '16:30' });
+  const at1630 = mine.filter({ hasText: '16:30' });
   await at1630.getByRole('button', { name: 'Não compareceu' }).click();
   await expect(at1630.getByText('Não compareceu')).toBeVisible();
   await expectNoHorizontalOverflow(page);

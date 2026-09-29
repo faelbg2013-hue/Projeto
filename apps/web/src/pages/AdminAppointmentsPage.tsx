@@ -111,25 +111,35 @@ export function AdminAppointmentsPage() {
 
   function onFilter(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    setApplied(draft);
+    const form = new FormData(event.currentTarget);
+    setApplied({
+      professionalId: String(form.get('professionalId') ?? ''),
+      clientId: String(form.get('clientId') ?? ''),
+      serviceId: String(form.get('serviceId') ?? ''),
+      date: String(form.get('date') ?? ''),
+      status: String(form.get('status') ?? '') as Filters['status'],
+    });
   }
 
   return (
     <SessionFrame eyebrow="Administração" title="Agendamentos" links={adminLinks}>
       <form className="grid min-w-0 gap-4 sm:grid-cols-2" onSubmit={onFilter}>
         <FilterSelect
+          name="professionalId"
           label="Profissional"
           value={draft.professionalId}
           onChange={(professionalId) => setDraft((current) => ({ ...current, professionalId }))}
           options={professionals.map((item) => ({ value: item.id, label: item.displayName }))}
         />
         <FilterSelect
+          name="clientId"
           label="Cliente"
           value={draft.clientId}
           onChange={(clientId) => setDraft((current) => ({ ...current, clientId }))}
           options={clients.map((item) => ({ value: item.id, label: item.user.name }))}
         />
         <FilterSelect
+          name="serviceId"
           label="Serviço"
           value={draft.serviceId}
           onChange={(serviceId) => setDraft((current) => ({ ...current, serviceId }))}
@@ -138,6 +148,7 @@ export function AdminAppointmentsPage() {
         <label className="flex min-w-0 flex-col gap-2 text-[0.68rem] uppercase tracking-[0.28em] text-muted">
           Data
           <input
+            name="date"
             type="date"
             value={draft.date}
             onChange={(event) => setDraft((current) => ({ ...current, date: event.target.value }))}
@@ -145,6 +156,7 @@ export function AdminAppointmentsPage() {
           />
         </label>
         <FilterSelect
+          name="status"
           label="Status"
           value={draft.status}
           onChange={(status) =>
@@ -195,11 +207,13 @@ export function AdminAppointmentsPage() {
 }
 
 function FilterSelect({
+  name,
   label,
   value,
   onChange,
   options,
 }: {
+  name: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -209,6 +223,7 @@ function FilterSelect({
     <label className="flex min-w-0 flex-col gap-2 text-[0.68rem] uppercase tracking-[0.28em] text-muted">
       {label}
       <select
+        name={name}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="w-full border border-line bg-surface px-4 py-3 text-base font-normal normal-case tracking-normal text-foreground outline-none focus:border-accent"

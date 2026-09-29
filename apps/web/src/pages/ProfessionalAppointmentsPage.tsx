@@ -65,7 +65,11 @@ export function ProfessionalAppointmentsPage() {
 
   function onFilter(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    setApplied({ date, status });
+    const form = new FormData(event.currentTarget);
+    setApplied({
+      date: String(form.get('date') ?? ''),
+      status: String(form.get('status') ?? '') as '' | AppointmentStatus,
+    });
   }
 
   return (
@@ -74,6 +78,7 @@ export function ProfessionalAppointmentsPage() {
         <label className="flex min-w-0 flex-1 flex-col gap-2 text-[0.68rem] uppercase tracking-[0.28em] text-muted">
           Data
           <input
+            name="date"
             type="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
@@ -83,6 +88,7 @@ export function ProfessionalAppointmentsPage() {
         <label className="flex min-w-0 flex-1 flex-col gap-2 text-[0.68rem] uppercase tracking-[0.28em] text-muted">
           Status
           <select
+            name="status"
             value={status}
             onChange={(event) => setStatus(event.target.value as '' | AppointmentStatus)}
             className="w-full border border-line bg-surface px-4 py-3 text-base font-normal normal-case tracking-normal text-foreground outline-none focus:border-accent"
