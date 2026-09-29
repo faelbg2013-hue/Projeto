@@ -17,6 +17,7 @@ describe('ApiClient', () => {
     await expect(client.get<HealthResponse>('/api/v1/health')).resolves.toEqual(payload);
     expect(fetchFn).toHaveBeenCalledWith('http://127.0.0.1:43111/api/v1/health', {
       method: 'GET',
+      credentials: 'include',
       headers: { Accept: 'application/json' },
     });
   });

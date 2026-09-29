@@ -6,6 +6,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
+import { Public } from '../../common/auth/public.decorator';
 import { ApiErrorResponseDto } from '../../common/dto/api-error.response';
 import { HealthResponseDto } from './dto/health.response';
 import { HealthService } from './health.service';
@@ -16,6 +17,7 @@ export class HealthController {
   constructor(@Inject(HealthService) private readonly healthService: HealthService) {}
 
   @Get()
+  @Public()
   @SkipThrottle()
   @ApiOperation({
     operationId: 'getHealth',

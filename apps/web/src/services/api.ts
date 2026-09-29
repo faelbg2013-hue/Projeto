@@ -25,20 +25,53 @@ function isApiErrorBody(value: unknown): value is ApiErrorBody {
   );
 }
 
+export interface ApiRequest {
+  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  body?: unknown;
+  headers?: Record<string, string>;
+}
+
 export class ApiClient {
+  private readonly fetchFn: typeof fetch;
+
   constructor(
     private readonly baseUrl: string,
-    private readonly fetchFn: typeof fetch = fetch,
-  ) {}
+    fetchFn?: typeof fetch,
+  ) {
+    this.fetchFn = fetchFn ?? ((input, init) => fetch(input, init));
+  }
 
-  async get<TResponse>(path: string): Promise<TResponse> {
+  get<TResponse>(path: string, headers?: Record<string, string>): Promise<TResponse> {
+    return this.request<TResponse>(path, { method: 'GET', headers });
+  }
+
+  post<TResponse>(
+    path: string,
+    body?: unknown,
+    headers?: Record<string, string>,
+  ): Promise<TResponse> {
+    return this.request<TResponse>(path, { method: 'POST', body, headers });
+  }
+
+  private async request<TResponse>(path: string, init: ApiRequest): Promise<TResponse> {
     const response = await this.fetchFn(`${this.baseUrl}${path}`, {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
+      method: init.method ?? 'GET',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        ...(init.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...init.headers,
+      },
+      body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
     });
 
+    if (response.status === 204) {
+      return undefined as TResponse;
+    }
+
+    const payload: unknown = await response.json().catch(() => null);
+
     if (!response.ok) {
-      const payload: unknown = await response.json().catch(() => null);
       if (isApiErrorBody(payload)) {
         throw new ApiClientError(payload);
       }
@@ -50,6 +83,6 @@ export class ApiClient {
       });
     }
 
-    return (await response.json()) as TResponse;
+    return payload as TResponse;
   }
 }

@@ -1,6 +1,3 @@
-// Foundation schema. Business entities are intentionally absent in phase 01.
-// Table structure will be introduced in later phases.
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,4 +5,58 @@ generator client {
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CLIENT
+  PROFESSIONAL
+  ADMIN
+}
+
+model Tenant {
+  id        String        @id @default(uuid()) @db.Char(36)
+  name      String        @db.VarChar(120)
+  slug      String        @unique @db.VarChar(80)
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  users     User[]
+  sessions  UserSession[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String        @id @default(uuid()) @db.Char(36)
+  tenantId     String        @db.Char(36)
+  name         String        @db.VarChar(160)
+  email        String        @db.VarChar(255)
+  passwordHash String        @db.VarChar(255)
+  role         UserRole
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  sessions     UserSession[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+model UserSession {
+  id               String    @id @default(uuid()) @db.Char(36)
+  userId           String    @db.Char(36)
+  tenantId         String    @db.Char(36)
+  refreshTokenHash String    @unique @db.Char(64)
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant           Tenant    @relation(fields: [tenantId], references: [id])
+
+  @@index([userId])
+  @@index([tenantId])
+  @@map("user_sessions")
 }

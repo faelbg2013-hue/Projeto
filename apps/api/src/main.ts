@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
 import { isSwaggerEnabled, type LogLevel } from '@ravion/validation';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
@@ -53,8 +54,9 @@ async function bootstrap(): Promise<void> {
       .filter((origin) => origin.length > 0),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Tenant-Slug'],
   });
+  app.use(cookieParser());
   app.use(requestLogger());
   app.setGlobalPrefix('api');
   app.enableVersioning({

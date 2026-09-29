@@ -3,9 +3,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { validateEnv } from '@ravion/validation';
+import { AuthGuard } from './common/auth/auth.guard';
+import { RolesGuard } from './common/auth/roles.guard';
 import { AppThrottlerGuard } from './common/security/app-throttler.guard';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -26,12 +30,22 @@ import { HealthModule } from './modules/health/health.module';
       }),
     }),
     PrismaModule,
+    AuthModule,
+    UsersModule,
     HealthModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: AppThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })

@@ -14,7 +14,10 @@ Não existe backend separado por cliente. As regras de negócio permanecem nesta
 Convenções:
 - Rotas versionadas em /api/v1.
 - Erros seguem ApiErrorResponseDto: statusCode, message e error. A resposta não inclui stack trace.
-- Autenticação futura usa o cabeçalho Authorization com o esquema bearer (JWT). Health é público.
+- O access token é um JWT no cabeçalho Authorization (esquema bearer) ou no cookie HttpOnly ravion_access. Health e o cadastro/login/refresh/logout são públicos.
+- O login exige o header X-Tenant-Slug. Esse slug escolhe o contexto lógico da aplicação. Não é uma barbearia e não substitui o papel do usuário.
+- Depois da autenticação, o tenant vem do token e do usuário no banco. Um tenantId no corpo não autoriza acesso a outro contexto.
+- Papéis: CLIENT, PROFESSIONAL e ADMIN. O cadastro público cria somente CLIENT.
 - Listagens futuras aceitam os query params page e pageSize. Filtros adicionais são query params específicos de cada recurso.
 - O envelope de paginação é PaginationMetaDto.`;
 
@@ -37,6 +40,8 @@ export function buildSwaggerConfig(port: number): Omit<OpenAPIObject, 'paths'> {
       'bearer',
     )
     .addTag('health', 'Disponibilidade da API')
+    .addTag('auth', 'Cadastro, sessão e usuário autenticado')
+    .addTag('users', 'Usuários do tenant autenticado')
     .build();
 }
 

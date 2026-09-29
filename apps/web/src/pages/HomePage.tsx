@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { PageMeta } from '../types/page';
 import { BrandMark } from '../components/BrandMark';
@@ -14,7 +15,14 @@ export function HomePage() {
     <div className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col px-5 py-8 sm:px-8 md:px-12 lg:px-16 lg:py-12">
       <header className="flex items-center justify-between gap-4">
         <BrandMark />
-        <p className="text-[0.68rem] uppercase tracking-[0.32em] text-muted">Plataforma</p>
+        <nav className="flex items-center gap-4 text-[0.68rem] uppercase tracking-[0.28em]">
+          <Link to="/login" className="text-muted">
+            Entrar
+          </Link>
+          <Link to="/register" className="text-foreground">
+            Criar conta
+          </Link>
+        </nav>
       </header>
 
       <section className="flex flex-1 flex-col justify-end pb-16 pt-20 md:justify-center md:pb-8 md:pt-0">

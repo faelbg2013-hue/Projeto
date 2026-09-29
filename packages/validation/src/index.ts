@@ -8,6 +8,15 @@ export const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
+  JWT_ACCESS_EXPIRES_IN: z
+    .string()
+    .regex(/^\d+[smhd]$/)
+    .default('15m'),
+  JWT_REFRESH_EXPIRES_IN: z
+    .string()
+    .regex(/^\d+[smhd]$/)
+    .default('7d'),
+  DEFAULT_PUBLIC_TENANT_ID: z.string().uuid(),
   CORS_ORIGINS: z.string().min(1).default('http://localhost:43110,http://127.0.0.1:43110'),
   SWAGGER_ENABLED: z.enum(['true', 'false']).optional(),
   THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60_000),

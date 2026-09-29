@@ -12,6 +12,9 @@ const validEnv = {
   DATABASE_URL: 'mysql://ravion:ravion_dev_password@127.0.0.1:3306/ravion_barber',
   JWT_SECRET: 'dev-only-change-me-ravion-access-secret',
   JWT_REFRESH_SECRET: 'dev-only-change-me-ravion-refresh-secret',
+  JWT_ACCESS_EXPIRES_IN: '15m',
+  JWT_REFRESH_EXPIRES_IN: '7d',
+  DEFAULT_PUBLIC_TENANT_ID: '3f1c2a7e-6b4d-4e8a-9c21-0a1b2c3d4e5f',
   CORS_ORIGINS: 'http://127.0.0.1:43110',
 };
 

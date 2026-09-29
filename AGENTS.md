@@ -1,6 +1,6 @@
 # Ravion Barber
 
-Plataforma de gestão para barbearia. A fase atual é só a fundação técnica.
+Plataforma de gestão para barbearia. A fundação técnica e a autenticação com tenant já existem. A próxima fase não começa sem uma instrução nova.
 
 ## Arquitetura oficial
 
@@ -17,7 +17,9 @@ Não criar backend separado para o Flutter. Não criar `apps/mobile` até a fase
 - Manter rotas em `/api/v1`.
 - Manter erros no formato `statusCode`, `message`, `error`, sem stack trace para o cliente.
 - Não registrar senha, token, segredo ou connection string.
-- Não implementar login, usuários, clientes, profissionais, serviços, agendamentos, pontos, produtos, financeiro ou relatórios sem uma fase que peça isso.
+- O tenant é contexto lógico de aplicação, não uma barbearia e não um papel. Não aceitar `tenantId` vindo do cliente como autorização.
+- Não implementar clientes completos, profissionais completos, serviços, agendamentos, pontos, produtos, financeiro ou relatórios sem uma fase que peça isso.
+- Não guardar senha em texto puro nem devolver `passwordHash`. Não persistir o refresh token puro.
 - Swagger fica em `/api/docs` e não deve ficar exposto em produção sem `SWAGGER_ENABLED`.
 - Preservar os tokens visuais em `packages/ui`. Não espalhar cores soltas pelos componentes.
 
