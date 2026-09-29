@@ -227,8 +227,8 @@ test('client books with points, the professional sees the redemption, and cancel
 }, testInfo) => {
   const adminToken = await apiToken(request, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
   const stamp = `${testInfo.project.name}-${Date.now()}`;
-  const serviceName = `Resgate ${stamp}`;
-  const displayName = `00 Resgate ${stamp}`;
+  const serviceName = `Corte resgate ${stamp}`;
+  const displayName = `! Barbeiro ${stamp}`;
   const clientEmail = `e2e-resgate-${stamp}@example.com`;
   const professionalEmail = `e2e-resgate-pro-${stamp}@example.com`;
   const created = await request.post(`${apiOrigin}/api/v1/professionals`, {

@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBody,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -59,12 +60,16 @@ export class AppointmentsController {
     required: false,
     description: '8 a 80 caracteres [A-Za-z0-9_-]. O mesmo corpo devolve o agendamento já criado.',
   })
+  @ApiBody({ type: CreateAppointmentDto })
   @ApiCreatedResponse({ type: AppointmentResponseDto })
   @ApiBadRequestResponse({ type: ApiErrorResponseDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
   @ApiForbiddenResponse({ type: ApiErrorResponseDto })
   @ApiNotFoundResponse({ type: ApiErrorResponseDto })
-  @ApiConflictResponse({ type: ApiErrorResponseDto, description: 'Este horário não está mais disponível.' })
+  @ApiConflictResponse({
+    type: ApiErrorResponseDto,
+    description: 'Horário indisponível ou saldo de pontos insuficiente.',
+  })
   create(
     @CurrentUser() actor: AuthUser,
     @Body(bodyPipe(CreateAppointmentDto)) body: CreateAppointmentDto,

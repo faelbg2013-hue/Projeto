@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
@@ -64,8 +65,10 @@ export class ServicesController {
   @ApiOperation({
     operationId: 'createService',
     summary: 'Cria um serviço no tenant autenticado',
-    description: 'Somente ADMIN. tenantId do corpo é rejeitado. O tenant vem da sessão.',
+    description:
+      'Somente ADMIN. tenantId do corpo é rejeitado. O tenant vem da sessão. points é o ganho na conclusão. redemptionPoints é o custo do resgate e pode ser null.',
   })
+  @ApiBody({ type: CreateServiceDto })
   @ApiCreatedResponse({ type: ServiceResponseDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
   @ApiForbiddenResponse({ type: ApiErrorResponseDto })
@@ -98,8 +101,10 @@ export class ServicesController {
   @ApiOperation({
     operationId: 'updateService',
     summary: 'Atualiza um serviço do tenant autenticado',
-    description: 'Somente ADMIN. tenantId não faz parte do contrato e é rejeitado.',
+    description:
+      'Somente ADMIN. tenantId não faz parte do contrato e é rejeitado. redemptionPoints null desativa o resgate.',
   })
+  @ApiBody({ type: UpdateServiceDto })
   @ApiOkResponse({ type: ServiceResponseDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
   @ApiForbiddenResponse({ type: ApiErrorResponseDto })

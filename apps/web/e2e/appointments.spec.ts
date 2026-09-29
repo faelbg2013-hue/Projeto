@@ -92,7 +92,7 @@ async function openWeek(
 test('client books, sees the summary and cancels into history', async ({ page, request }, testInfo) => {
   const adminToken = await apiToken(request, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
   const stamp = `${testInfo.project.name}-${Date.now()}`;
-  const displayName = `00 Agenda ${stamp}`;
+  const displayName = `! Agenda ${stamp}`;
   const serviceName = `Corte ${stamp}`;
   const email = `e2e-agenda-cliente-${stamp}@example.com`;
   const created = await request.post(`${apiOrigin}/api/v1/professionals`, {
@@ -174,7 +174,7 @@ test('client sees the occupied slot error when the time is taken before confirm'
 }, testInfo) => {
   const adminToken = await apiToken(request, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
   const stamp = `${testInfo.project.name}-${Date.now()}`;
-  const displayName = `00 Ocupado ${stamp}`;
+  const displayName = `! Ocupado ${stamp}`;
   const serviceName = `Barba ${stamp}`;
   const created = await request.post(`${apiOrigin}/api/v1/professionals`, {
     headers: { Authorization: `Bearer ${adminToken}` },
