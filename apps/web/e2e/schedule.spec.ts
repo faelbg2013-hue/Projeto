@@ -119,13 +119,13 @@ test('admin configures a weekly schedule, block, exception and availability', as
   await page.getByLabel('Fim do bloqueio').fill('13:30');
   await page.getByLabel('Motivo do bloqueio').fill('Almoço');
   await page.getByRole('button', { name: 'Criar bloqueio' }).click();
-  await expect(page.getByText('Almoço')).toBeVisible();
+  await expect(page.getByText('Almoço', { exact: true })).toBeVisible();
 
   await page.getByLabel('Data da exceção').fill(date);
   await page.getByLabel('Tipo').selectOption({ label: 'Abrir' });
   await page.getByLabel('Motivo da exceção').fill('Plantão');
   await page.getByRole('button', { name: 'Criar exceção' }).click();
-  await expect(page.getByText('Plantão')).toBeVisible();
+  await expect(page.getByText('Plantão', { exact: true })).toBeVisible();
 
   await page.getByLabel('Data da consulta').fill(date);
   await page.getByLabel('Serviço').selectOption({ label: serviceName });

@@ -109,7 +109,7 @@ test('admin creates, edits and deactivates a service', async ({ page }, testInfo
 
 test('admin creates, edits and deactivates a professional', async ({ page }, testInfo) => {
   const email = `e2e-pro-${testInfo.project.name}-${Date.now()}@example.com`;
-  const displayName = `Barbeiro ${testInfo.project.name}`;
+  const displayName = `Barbeiro ${testInfo.project.name} ${Date.now()}`;
   await login(page, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
   await page.goto('/admin/professionals');
   await expect(page.getByRole('heading', { name: 'Profissionais' })).toBeVisible();
