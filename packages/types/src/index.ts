@@ -97,6 +97,57 @@ export interface ServiceItem {
   updatedAt: string;
 }
 
+export interface ScheduleInterval {
+  id: string;
+  tenantId: string;
+  professionalId: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProfessionalSchedule {
+  professionalId: string;
+  intervals: ScheduleInterval[];
+}
+
+export interface TimeBlock {
+  id: string;
+  tenantId: string;
+  professionalId: string;
+  startAt: string;
+  endAt: string;
+  reason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ScheduleExceptionType = 'BLOCK' | 'OPEN';
+
+export interface ScheduleException {
+  id: string;
+  tenantId: string;
+  professionalId: string;
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  type: ScheduleExceptionType;
+  reason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Availability {
+  date: string;
+  professionalId: string;
+  serviceId: string;
+  durationMinutes: number;
+  slots: string[];
+}
+
 export function isUserRole(value: unknown): value is UserRole {
   return typeof value === 'string' && userRoles.some((role) => role === value);
 }

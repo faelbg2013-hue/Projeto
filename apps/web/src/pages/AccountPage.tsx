@@ -15,7 +15,10 @@ const roleLabels: Record<UserRole, string> = {
 
 const accountLinks: Record<UserRole, ReadonlyArray<{ to: string; label: string }>> = {
   CLIENT: [],
-  PROFESSIONAL: [{ to: '/profissional', label: 'Área profissional' }],
+  PROFESSIONAL: [
+    { to: '/profissional', label: 'Área profissional' },
+    { to: '/profissional/agenda', label: 'Agenda' },
+  ],
   ADMIN: [
     { to: '/admin/services', label: 'Serviços' },
     { to: '/admin/professionals', label: 'Profissionais' },

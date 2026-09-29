@@ -52,10 +52,11 @@ Módulos atuais:
 - `users`: consulta administrativa limitada ao tenant da sessão, para garantir o isolamento
 - `clients`: perfil operacional do cliente
 - `professionals`: perfil operacional do profissional
+- `schedule`: agenda semanal, bloqueios, exceções e disponibilidade
 - `services`: catálogo com preço, duração e pontuação configurável
 - infraestrutura Prisma, fora de `modules`, porque não é um módulo de negócio
 
-Não há agenda, agendamento, saldo de pontos, produtos, financeiro ou relatórios. O modelo de domínio está em [domain.md](domain.md).
+Não há agendamento, reserva, saldo de pontos, produtos, financeiro ou relatórios. O modelo de domínio está em [domain.md](domain.md) e a agenda em [scheduling.md](scheduling.md).
 
 Resposta de saúde:
 
@@ -123,11 +124,11 @@ O boot registra a porta e, quando ligada, a rota do Swagger. Cada requisição f
 
 O manifesto chama o aplicativo de Ravion Barber, com `display: standalone`, orientação livre e ícones para celular, tablet e desktop. O service worker faz precache do shell e não implementa fila offline, sincronização ou cache da API.
 
-A página inicial apresenta o nome e a frase "Sistema de gestão para barbearia.". Há também `/login`, `/register`, `/conta`, `/profissional` e a administração em `/admin/services`, `/admin/professionals` e `/admin/clients`. A camada `src/services` é o único lugar em que o PWA chama a API. O cliente de autenticação não guarda token no `localStorage`.
+A página inicial apresenta o nome e a frase "Sistema de gestão para barbearia.". Há também `/login`, `/register`, `/conta`, `/profissional`, `/profissional/agenda` e a administração em `/admin/services`, `/admin/professionals`, `/admin/professionals/:id/schedule` e `/admin/clients`. A camada `src/services` é o único lugar em que o PWA chama a API. O cliente de autenticação não guarda token no `localStorage`.
 
 ## Banco
 
-`docker-compose.yml` sobe MySQL 8.4 para desenvolvimento. Usuário, senha, database e porta vêm do ambiente. O schema tem `tenants`, `users`, `user_sessions`, `clients`, `professionals` e `services`. O e-mail é único por tenant, não no sistema inteiro. O slug do tenant é único. Cliente e profissional são únicos por usuário e também por `(tenantId, userId)`. As migrations ficam em `prisma/migrations`; o fluxo é `prisma migrate dev`, não `db push`.
+`docker-compose.yml` sobe MySQL 8.4 para desenvolvimento. Usuário, senha, database e porta vêm do ambiente. O schema tem `tenants`, `users`, `user_sessions`, `clients`, `professionals`, `services`, `professional_schedules`, `professional_time_blocks` e `professional_schedule_exceptions`. O e-mail é único por tenant, não no sistema inteiro. O slug do tenant é único. Cliente e profissional são únicos por usuário e também por `(tenantId, userId)`. As migrations ficam em `prisma/migrations`; o fluxo é `prisma migrate dev`, não `db push`.
 
 ## Tenant
 
@@ -135,9 +136,9 @@ O tenant separa contextos lógicos de aplicação dentro de um único Ravion Bar
 
 ## Testes
 
-- Vitest cobre contratos, validação de ambiente, health, filtro de erro, redação de log, OpenAPI, senha, guards, isolamento entre tenants, clientes, profissionais, serviços e as telas de autenticação.
-- Playwright percorre a home, o login, o cadastro, a conta, a área do profissional e a administração em 360, 390, 768, 1024 e 1440 pixels.
+- Vitest cobre contratos, validação de ambiente, health, filtro de erro, redação de log, OpenAPI, senha, guards, isolamento entre tenants, clientes, profissionais, serviços, agenda e as telas de autenticação.
+- Playwright percorre a home, o login, o cadastro, a conta, a área do profissional, a agenda e a administração em 360, 390, 768, 1024 e 1440 pixels.
 
 ## Fora de escopo
 
-Agenda, agendamento, disponibilidade, saldo e extrato de pontos, produtos, financeiro, relatórios e o aplicativo Flutter.
+Agendamento, reserva, saldo e extrato de pontos, produtos, financeiro, relatórios e o aplicativo Flutter. A disponibilidade já existe e não reserva horário.

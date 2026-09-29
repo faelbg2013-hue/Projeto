@@ -26,7 +26,7 @@ function isApiErrorBody(value: unknown): value is ApiErrorBody {
 }
 
 export interface ApiRequest {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   headers?: Record<string, string>;
 }
@@ -51,6 +51,14 @@ export class ApiClient {
     headers?: Record<string, string>,
   ): Promise<TResponse> {
     return this.request<TResponse>(path, { method: 'POST', body, headers });
+  }
+
+  put<TResponse>(
+    path: string,
+    body?: unknown,
+    headers?: Record<string, string>,
+  ): Promise<TResponse> {
+    return this.request<TResponse>(path, { method: 'PUT', body, headers });
   }
 
   patch<TResponse>(

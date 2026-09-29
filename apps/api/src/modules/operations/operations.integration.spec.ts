@@ -160,6 +160,9 @@ describe('clients, professionals and services', () => {
   afterAll(async () => {
     await app?.close();
     await prisma.userSession.deleteMany({ where: { tenantId: { in: tenantIds } } });
+    await prisma.professionalScheduleException.deleteMany({ where: { tenantId: { in: tenantIds } } });
+    await prisma.professionalTimeBlock.deleteMany({ where: { tenantId: { in: tenantIds } } });
+    await prisma.professionalSchedule.deleteMany({ where: { tenantId: { in: tenantIds } } });
     await prisma.professional.deleteMany({ where: { tenantId: { in: tenantIds } } });
     await prisma.client.deleteMany({ where: { tenantId: { in: tenantIds } } });
     await prisma.service.deleteMany({ where: { tenantId: { in: tenantIds } } });

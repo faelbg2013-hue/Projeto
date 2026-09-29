@@ -1,6 +1,6 @@
 # Ravion Barber
 
-Plataforma de gestão para barbearia. A fundação técnica está no ar, com usuários, autenticação, papéis, clientes, profissionais, serviços e isolamento por tenant. Agenda e fidelidade continuam fora.
+Plataforma de gestão para barbearia. A fundação técnica está no ar, com usuários, autenticação, papéis, clientes, profissionais, serviços, agenda e isolamento por tenant. Agendamento e fidelidade continuam fora.
 
 O futuro aplicativo mobile do Ravion Barber será desenvolvido em Flutter utilizando Dart e consumirá a mesma REST API utilizada pela aplicação PWA.
 
@@ -141,4 +141,4 @@ pnpm --filter @ravion/web exec playwright install chromium
 
 ## O que ainda não existe
 
-Agenda, agendamento, calendário, disponibilidade, saldo de pontos, produtos, financeiro, relatórios e o aplicativo Flutter. O diretório `apps/mobile` será criado apenas quando o desenvolvimento mobile começar. O Flutter usará esta mesma API.
+Agendamento, reserva, saldo de pontos, produtos, financeiro, relatórios e o aplicativo Flutter. A disponibilidade consulta horários e não reserva. O diretório `apps/mobile` será criado apenas quando o desenvolvimento mobile começar. O Flutter usará esta mesma API. A agenda está descrita em [docs/scheduling.md](docs/scheduling.md).

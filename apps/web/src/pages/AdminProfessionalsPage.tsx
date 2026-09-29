@@ -1,5 +1,6 @@
 import type { ProfessionalProfile } from '@ravion/types';
 import { useEffect, useState, type FormEvent } from 'react';
+import { Link } from 'react-router';
 import { Field } from '../components/Field';
 import { SessionFrame, adminLinks } from '../components/SessionFrame';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -197,6 +198,12 @@ export function AdminProfessionalsPage() {
             <p className="mt-2 break-all text-sm text-muted">{professional.user.email}</p>
             <p className="mt-1 text-sm text-muted">{professional.user.name}</p>
             <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                to={`/admin/professionals/${professional.id}/schedule`}
+                className="text-[0.68rem] uppercase tracking-[0.28em] text-foreground"
+              >
+                Agenda
+              </Link>
               <button
                 type="button"
                 onClick={() => {

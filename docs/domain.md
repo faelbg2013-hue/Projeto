@@ -1,6 +1,6 @@
 # Domínio operacional
 
-Cliente, profissional e serviço são os registros que a agenda vai usar depois. Esta fase não cria horário, disponibilidade, agendamento, saldo de pontos, pagamento ou financeiro.
+Cliente, profissional e serviço são os registros operacionais. A agenda semanal, os bloqueios, as exceções e a disponibilidade estão em [scheduling.md](scheduling.md). Ainda não há agendamento, reserva, saldo de pontos, pagamento ou financeiro.
 
 O tenant continua sendo o contexto lógico da aplicação, não uma barbearia. O `tenantId` de qualquer um desses registros sai da sessão autenticada. Um valor enviado pelo cliente é rejeitado pelo `ValidationPipe` e não muda o registro.
 
@@ -57,7 +57,7 @@ Campos: `id`, `tenantId`, `name`, `description`, `price`, `durationMinutes`, `po
 - `name` é obrigatório e não é um enum. Não há unicidade de nome.
 - `description` pode ser nula.
 - `price` é `DECIMAL(10,2)`. A API devolve string com duas casas, por exemplo `"45.00"`. Preço negativo é rejeitado. O banco também recusa preço negativo.
-- `durationMinutes` é inteiro maior que zero e no máximo 1440. Ainda não há regra de horário.
+- `durationMinutes` é inteiro maior que zero e no máximo 1440. A disponibilidade usa esse valor para limitar o horário de início.
 - `points` é inteiro maior ou igual a zero e no máximo 100000. É a pontuação configurada do serviço, não um saldo.
 - Não existe entidade de categoria.
 
@@ -83,6 +83,8 @@ Consulta, alteração e desativação de um registro de outro tenant respondem `
 
 - `/conta` mostra nome, e-mail, perfil e serviços ativos.
 - `/profissional` mostra nome de exibição, perfil, status e serviços ativos.
+- `/profissional/agenda` configura a semana, bloqueios, exceções e a consulta de disponibilidade do próprio profissional.
 - `/admin/services`, `/admin/professionals` e `/admin/clients` fazem a operação administrativa simples.
+- `/admin/professionals/:id/schedule` faz o mesmo para um profissional do tenant.
 
 O Flutter ainda não existe. Ele consumirá estas mesmas rotas.

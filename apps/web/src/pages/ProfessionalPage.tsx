@@ -35,7 +35,14 @@ export function ProfessionalPage() {
   }, []);
 
   return (
-    <SessionFrame eyebrow="Profissional" title={title} links={[{ to: '/conta', label: 'Conta' }]}>
+    <SessionFrame
+      eyebrow="Profissional"
+      title={title}
+      links={[
+        { to: '/profissional/agenda', label: 'Agenda' },
+        { to: '/conta', label: 'Conta' },
+      ]}
+    >
       <dl className="max-w-md space-y-4 text-sm">
         <ProfileRow label="E-mail" value={user?.email ?? ''} />
         <ProfileRow label="Perfil" value="Profissional" />

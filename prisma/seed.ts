@@ -84,6 +84,7 @@ async function main(): Promise<void> {
       role: 'PROFESSIONAL',
       displayName: readEnv('SEED_PROFESSIONAL_DISPLAY_NAME'),
     });
+    await ensureSchedule(prisma, tenant.id, readEnv('SEED_PROFESSIONAL_EMAIL').toLowerCase());
     await backfillClientProfiles(prisma, tenant.id);
     await ensureServices(prisma, tenant.id);
 
@@ -92,6 +93,7 @@ async function main(): Promise<void> {
     console.log('Cliente de teste pronto');
     console.log('Profissional de teste pronto');
     console.log('Serviços de desenvolvimento prontos');
+    console.log('Agenda de desenvolvimento pronta');
   } finally {
     await prisma.$disconnect();
   }
@@ -174,6 +176,45 @@ async function backfillClientProfiles(prisma: PrismaClient, tenantId: string): P
   for (const user of users) {
     await prisma.client.create({
       data: { tenantId, userId: user.id, isActive: true },
+    });
+  }
+}
+
+async function ensureSchedule(prisma: PrismaClient, tenantId: string, email: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { tenantId_email: { tenantId, email } },
+  });
+  if (!user) {
+    return;
+  }
+  const professional = await prisma.professional.findUnique({ where: { userId: user.id } });
+  if (!professional) {
+    return;
+  }
+  const existing = await prisma.professionalSchedule.count({
+    where: { professionalId: professional.id },
+  });
+  if (existing > 0) {
+    return;
+  }
+
+  const rows: Array<{ dayOfWeek: number; startTime: string; endTime: string }> = [];
+  for (const dayOfWeek of [1, 2, 3, 4, 5]) {
+    rows.push({ dayOfWeek, startTime: '08:00', endTime: '12:00' });
+    rows.push({ dayOfWeek, startTime: '13:30', endTime: '18:00' });
+  }
+  rows.push({ dayOfWeek: 6, startTime: '08:00', endTime: '14:00' });
+
+  for (const row of rows) {
+    await prisma.professionalSchedule.create({
+      data: {
+        tenantId,
+        professionalId: professional.id,
+        dayOfWeek: row.dayOfWeek,
+        startTime: row.startTime,
+        endTime: row.endTime,
+        isActive: true,
+      },
     });
   }
 }

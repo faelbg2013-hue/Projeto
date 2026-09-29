@@ -13,6 +13,11 @@ enum UserRole {
   ADMIN
 }
 
+enum ScheduleExceptionType {
+  BLOCK
+  OPEN
+}
+
 model Tenant {
   id        String        @id @default(uuid()) @db.Char(36)
   name      String        @db.VarChar(120)
@@ -22,9 +27,12 @@ model Tenant {
   updatedAt DateTime      @updatedAt
   users         User[]
   sessions      UserSession[]
-  clients       Client[]
-  professionals Professional[]
-  services      Service[]
+  clients              Client[]
+  professionals        Professional[]
+  services             Service[]
+  schedules            ProfessionalSchedule[]
+  timeBlocks           ProfessionalTimeBlock[]
+  scheduleExceptions   ProfessionalScheduleException[]
 
   @@map("tenants")
 }
@@ -89,12 +97,69 @@ model Professional {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant             Tenant                        @relation(fields: [tenantId], references: [id])
+  user               User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedules          ProfessionalSchedule[]
+  timeBlocks         ProfessionalTimeBlock[]
+  scheduleExceptions ProfessionalScheduleException[]
 
   @@unique([tenantId, userId])
   @@index([tenantId])
   @@map("professionals")
+}
+
+/// Horário recorrente, só com hora de parede. dayOfWeek: 1 segunda … 7 domingo.
+model ProfessionalSchedule {
+  id             String       @id @default(uuid()) @db.Char(36)
+  tenantId       String       @db.Char(36)
+  professionalId String       @db.Char(36)
+  dayOfWeek      Int
+  startTime      String       @db.Char(5)
+  endTime        String       @db.Char(5)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  tenant         Tenant       @relation(fields: [tenantId], references: [id])
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, professionalId, dayOfWeek])
+  @@map("professional_schedules")
+}
+
+/// Período absoluto em que o profissional não atende. Instantes em UTC; a leitura usa America/Sao_Paulo.
+model ProfessionalTimeBlock {
+  id             String       @id @default(uuid()) @db.Char(36)
+  tenantId       String       @db.Char(36)
+  professionalId String       @db.Char(36)
+  startAt        DateTime
+  endAt          DateTime
+  reason         String?      @db.VarChar(240)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  tenant         Tenant       @relation(fields: [tenantId], references: [id])
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, professionalId, startAt, endAt])
+  @@map("professional_time_blocks")
+}
+
+/// Exceção de um dia. Horários nulos significam o dia inteiro na timezone da agenda.
+model ProfessionalScheduleException {
+  id             String                @id @default(uuid()) @db.Char(36)
+  tenantId       String                @db.Char(36)
+  professionalId String                @db.Char(36)
+  date           String                @db.Char(10)
+  startTime      String?               @db.Char(5)
+  endTime        String?               @db.Char(5)
+  type           ScheduleExceptionType
+  reason         String?               @db.VarChar(240)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  tenant         Tenant                @relation(fields: [tenantId], references: [id])
+  professional   Professional          @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, professionalId, date])
+  @@map("professional_schedule_exceptions")
 }
 
 model Service {

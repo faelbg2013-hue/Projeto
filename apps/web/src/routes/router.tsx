@@ -3,6 +3,7 @@ import { RequireAuth } from '../auth/RequireAuth';
 import { RequireRole } from '../auth/RequireRole';
 import { RootLayout } from '../layouts/RootLayout';
 import { AccountPage } from '../pages/AccountPage';
+import { AgendaPage } from '../pages/AgendaPage';
 import { AdminClientsPage } from '../pages/AdminClientsPage';
 import { AdminProfessionalsPage } from '../pages/AdminProfessionalsPage';
 import { AdminServicesPage } from '../pages/AdminServicesPage';
@@ -26,13 +27,20 @@ export const appRoutes: RouteObject[] = [
           { path: 'conta', element: <AccountPage /> },
           {
             element: <RequireRole roles={['PROFESSIONAL']} />,
-            children: [{ path: 'profissional', element: <ProfessionalPage /> }],
+            children: [
+              { path: 'profissional', element: <ProfessionalPage /> },
+              { path: 'profissional/agenda', element: <AgendaPage scope="me" /> },
+            ],
           },
           {
             element: <RequireRole roles={['ADMIN']} />,
             children: [
               { path: 'admin/services', element: <AdminServicesPage /> },
               { path: 'admin/professionals', element: <AdminProfessionalsPage /> },
+              {
+                path: 'admin/professionals/:professionalId/schedule',
+                element: <AgendaPage scope="admin" />,
+              },
               { path: 'admin/clients', element: <AdminClientsPage /> },
             ],
           },
