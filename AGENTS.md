@@ -18,7 +18,7 @@ Não criar backend separado para o Flutter. Não criar `apps/mobile` até a fase
 - Manter erros no formato `statusCode`, `message`, `error`, sem stack trace para o cliente.
 - Não registrar senha, token, segredo ou connection string.
 - O tenant é contexto lógico de aplicação, não uma barbearia e não um papel. Não aceitar `tenantId` vindo do cliente como autorização.
-- Cliente, profissional, serviço, agenda e agendamento já existem e respeitam o tenant da sessão. Não implementar saldo de pontos, fidelidade, produtos, financeiro, pagamento, notificação, WhatsApp ou comissão sem uma fase que peça isso. Concluir um agendamento não move pontos.
+- Cliente, profissional, serviço, agenda, agendamento e o ledger de pontos já existem e respeitam o tenant da sessão. Não implementar catálogo de recompensas, resgate pelo cliente, produtos, financeiro, pagamento, notificação, WhatsApp ou comissão sem uma fase que peça isso. O saldo sai do ledger, não de um campo no cliente.
 - Não guardar senha em texto puro nem devolver `passwordHash`. Não persistir o refresh token puro.
 - Swagger fica em `/api/docs` e não deve ficar exposto em produção sem `SWAGGER_ENABLED`.
 - Preservar os tokens visuais em `packages/ui`. Não espalhar cores soltas pelos componentes.

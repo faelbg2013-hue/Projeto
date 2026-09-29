@@ -161,6 +161,7 @@ export interface AppointmentItem {
   serviceName: string;
   price: string;
   durationMinutes: number;
+  pointsSnapshot: number;
   date: string;
   time: string;
   startAt: string;
@@ -176,6 +177,35 @@ export interface AppointmentItem {
 export interface BookableProfessional {
   id: string;
   displayName: string;
+}
+
+export type PointsTransactionType = 'EARN' | 'REDEEM' | 'ADJUSTMENT_CREDIT' | 'ADJUSTMENT_DEBIT';
+
+export interface PointsBalance {
+  balance: number;
+}
+
+export interface PointsTransactionItem {
+  id: string;
+  type: PointsTransactionType;
+  points: number;
+  reason: string;
+  appointmentId: string | null;
+  serviceName: string | null;
+  createdAt: string;
+}
+
+export interface ClientPointsSummary {
+  clientId: string;
+  balance: number;
+  credits: number;
+  debits: number;
+  lastTransaction: PointsTransactionItem | null;
+}
+
+export interface PointsAdjustmentResult {
+  balance: number;
+  transaction: PointsTransactionItem;
 }
 
 export function isUserRole(value: unknown): value is UserRole {

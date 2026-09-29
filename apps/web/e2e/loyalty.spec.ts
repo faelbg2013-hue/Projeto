@@ -1,0 +1,223 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+
+const apiOrigin = 'http://127.0.0.1:43111';
+
+function envValue(name: string): string {
+  const fromProcess = process.env[name]?.trim();
+  if (fromProcess) {
+    return fromProcess;
+  }
+  const text = readFileSync(fileURLToPath(new URL('../../../.env', import.meta.url)), 'utf8');
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) {
+      continue;
+    }
+    const separator = trimmed.indexOf('=');
+    if (trimmed.slice(0, separator) === name) {
+      return trimmed.slice(separator + 1).trim();
+    }
+  }
+  throw new Error(`Variável ausente: ${name}`);
+}
+
+function nextWeekday(weekday: number): string {
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  const label = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo',
+    weekday: 'short',
+  }).format(new Date(`${today}T12:00:00-03:00`));
+  const map: Record<string, number> = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
+  const delta = (weekday - (map[label] ?? 1) + 7) % 7;
+  const [year, month, day] = today.split('-').map(Number);
+  const utc = new Date(Date.UTC(year ?? 2026, (month ?? 1) - 1, (day ?? 1) + (delta === 0 ? 7 : delta)));
+  return utc.toISOString().slice(0, 10);
+}
+
+async function expectNoHorizontalOverflow(page: Page): Promise<void> {
+  const overflow = await page.evaluate(() => {
+    return document.documentElement.scrollWidth - document.documentElement.clientWidth;
+  });
+  expect(overflow).toBeLessThanOrEqual(1);
+}
+
+async function login(page: Page, email: string, password: string): Promise<void> {
+  await page.goto('/login');
+  await page.getByLabel('E-mail').fill(email);
+  await page.getByLabel('Senha').fill(password);
+  await page.getByRole('button', { name: 'Entrar' }).click();
+  await expect(page).toHaveURL(/\/conta$/);
+}
+
+async function apiToken(request: APIRequestContext, email: string, password: string): Promise<string> {
+  const response = await request.post(`${apiOrigin}/api/v1/auth/login`, {
+    headers: { 'X-Tenant-Slug': envValue('TENANT_SLUG') },
+    data: { email, password },
+  });
+  expect(response.status()).toBe(200);
+  const body = (await response.json()) as { accessToken: string };
+  return body.accessToken;
+}
+
+async function openWeek(request: APIRequestContext, token: string, professionalId: string): Promise<void> {
+  const saved = await request.put(`${apiOrigin}/api/v1/professionals/${professionalId}/schedule`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      intervals: [1, 2, 3, 4, 5, 6].map((dayOfWeek) => ({
+        dayOfWeek,
+        startTime: '08:00',
+        endTime: '18:00',
+      })),
+    },
+  });
+  expect(saved.status(), await saved.text()).toBe(200);
+}
+
+test('client sees the earned balance and statement and cannot open admin points', async ({
+  page,
+  request,
+}, testInfo) => {
+  const adminToken = await apiToken(request, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  const stamp = `${testInfo.project.name}-${Date.now()}`;
+  const serviceName = `Corte pontos ${stamp}`;
+  const clientEmail = `e2e-pontos-cliente-${stamp}@example.com`;
+  const professionalEmail = `e2e-pontos-pro-${stamp}@example.com`;
+  const created = await request.post(`${apiOrigin}/api/v1/professionals`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+    data: {
+      name: 'Barbeiro Pontos',
+      email: professionalEmail,
+      password: 'senha-segura',
+      displayName: `00 Pontos ${stamp}`,
+    },
+  });
+  expect(created.status()).toBe(201);
+  const professional = (await created.json()) as { id: string };
+  await openWeek(request, adminToken, professional.id);
+  const service = await request.post(`${apiOrigin}/api/v1/services`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+    data: { name: serviceName, price: 45, durationMinutes: 30, points: 10 },
+  });
+  expect(service.status()).toBe(201);
+  const serviceBody = (await service.json()) as { id: string };
+  const registered = await request.post(`${apiOrigin}/api/v1/auth/register`, {
+    data: { name: 'Cliente Pontos', email: clientEmail, password: 'senha-segura' },
+  });
+  expect(registered.status()).toBe(201);
+  const clientToken = ((await registered.json()) as { accessToken: string }).accessToken;
+  const profile = await request.get(`${apiOrigin}/api/v1/clients/me`, {
+    headers: { Authorization: `Bearer ${clientToken}` },
+  });
+  expect(profile.status()).toBe(200);
+  const client = (await profile.json()) as { id: string };
+  const booked = await request.post(`${apiOrigin}/api/v1/appointments`, {
+    headers: { Authorization: `Bearer ${clientToken}` },
+    data: {
+      professionalId: professional.id,
+      serviceId: serviceBody.id,
+      date: nextWeekday(2),
+      time: '10:00',
+    },
+  });
+  expect(booked.status(), await booked.text()).toBe(201);
+  const appointment = (await booked.json()) as { id: string };
+  const professionalToken = await apiToken(request, professionalEmail, 'senha-segura');
+  const completed = await request.patch(`${apiOrigin}/api/v1/appointments/${appointment.id}/complete`, {
+    headers: { Authorization: `Bearer ${professionalToken}` },
+  });
+  expect(completed.status(), await completed.text()).toBe(200);
+
+  await login(page, clientEmail, 'senha-segura');
+  const card = page.locator('section').filter({ hasText: 'Pontos disponíveis' });
+  await expect(card).toBeVisible();
+  await expect(card).toContainText('10');
+  await expectNoHorizontalOverflow(page);
+  await card.getByRole('link', { name: 'Ver extrato' }).click();
+  await expect(page).toHaveURL(/\/pontos$/);
+  await expect(page.getByRole('heading', { name: 'Pontos' })).toBeVisible();
+  await expect(page.locator('p').filter({ hasText: 'Saldo atual' })).toContainText('10');
+  const earn = page.getByRole('article').filter({ hasText: `Atendimento concluído: ${serviceName}` });
+  await expect(earn.getByText('+10')).toBeVisible();
+  await expect(earn.getByRole('heading', { name: 'Atendimento' })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+
+  await page.goto(`/admin/clients/${client.id}/points`);
+  await expect(page).toHaveURL(/\/conta$/);
+  await expect(page.getByText('Sessão')).toBeVisible();
+});
+
+test('admin credits and debits with a debit preview', async ({ page, request }, testInfo) => {
+  const stamp = `${testInfo.project.name}-${Date.now()}`;
+  const clientEmail = `e2e-ajuste-${stamp}@example.com`;
+  const registered = await request.post(`${apiOrigin}/api/v1/auth/register`, {
+    data: { name: 'Cliente Ajuste', email: clientEmail, password: 'senha-segura' },
+  });
+  expect(registered.status()).toBe(201);
+  const clientToken = ((await registered.json()) as { accessToken: string }).accessToken;
+  const profile = await request.get(`${apiOrigin}/api/v1/clients/me`, {
+    headers: { Authorization: `Bearer ${clientToken}` },
+  });
+  expect(profile.status()).toBe(200);
+  const client = (await profile.json()) as { id: string };
+
+  await login(page, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  await page.goto(`/admin/clients/${client.id}/points`);
+  await expect(page.getByRole('heading', { name: 'Pontos' })).toBeVisible();
+  await expect(page.locator('p').filter({ hasText: 'Saldo atual' })).toContainText('0');
+  await expectNoHorizontalOverflow(page);
+
+  await page.getByRole('button', { name: 'Ajustar pontos' }).click();
+  await page.getByLabel('Tipo').selectOption({ label: 'Crédito' });
+  await page.getByLabel('Quantidade').fill('20');
+  await page.getByLabel('Motivo').fill('Bonificação');
+  await page.getByRole('button', { name: 'Confirmar' }).click();
+  await expect(page.locator('p').filter({ hasText: 'Saldo atual' })).toContainText('20');
+  const credit = page.getByRole('article').filter({ hasText: 'Bonificação' });
+  await expect(credit.getByText('+20')).toBeVisible();
+  await expect(credit.getByRole('heading', { name: 'Crédito' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Ajustar pontos' }).click();
+  await page.getByLabel('Tipo').selectOption({ label: 'Débito' });
+  await page.getByLabel('Quantidade').fill('5');
+  await page.getByLabel('Motivo').fill('Correção');
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await expect(page.locator('dt', { hasText: 'Saldo atual' }).locator('..').locator('dd')).toHaveText('20');
+  await expect(page.locator('dt', { hasText: 'Débito' }).locator('..').locator('dd')).toHaveText('5');
+  await expect(page.locator('dt', { hasText: 'Saldo após' }).locator('..').locator('dd')).toHaveText('15');
+  await page.getByRole('button', { name: 'Confirmar' }).click();
+  await expect(page.locator('p').filter({ hasText: 'Saldo atual' })).toContainText('15');
+  const debit = page.getByRole('article').filter({ hasText: 'Correção' });
+  await expect(debit.getByText('-5')).toBeVisible();
+  await expect(debit.getByRole('heading', { name: 'Débito' })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
+test('professional cannot open the points administration', async ({ page, request }, testInfo) => {
+  const stamp = `${testInfo.project.name}-${Date.now()}`;
+  const email = `e2e-pro-pontos-${stamp}@example.com`;
+  const token = await apiToken(request, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  const created = await request.post(`${apiOrigin}/api/v1/professionals`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      name: 'Profissional Pontos',
+      email,
+      password: 'senha-segura',
+      displayName: `Área pontos ${stamp}`,
+    },
+  });
+  expect(created.status()).toBe(201);
+
+  await login(page, email, 'senha-segura');
+  await expect(page.getByText('Pontos disponíveis')).toHaveCount(0);
+  await page.goto('/admin/clients/00000000-0000-4000-8000-000000000001/points');
+  await expect(page).toHaveURL(/\/conta$/);
+  await expect(page.getByText('Sessão')).toBeVisible();
+  await expect(page.getByText('Pontos disponíveis')).toHaveCount(0);
+});

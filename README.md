@@ -1,6 +1,6 @@
 # Ravion Barber
 
-Plataforma de gestão para barbearia. A fundação técnica está no ar, com usuários, autenticação, papéis, clientes, profissionais, serviços, agenda, agendamento e isolamento por tenant. Fidelidade continua fora.
+Plataforma de gestão para barbearia. A fundação técnica está no ar, com usuários, autenticação, papéis, clientes, profissionais, serviços, agenda, agendamento, pontos e isolamento por tenant. Recompensas continuam fora.
 
 O futuro aplicativo mobile do Ravion Barber será desenvolvido em Flutter utilizando Dart e consumirá a mesma REST API utilizada pela aplicação PWA.
 
@@ -20,7 +20,7 @@ PWA Web (React + Vite + TypeScript)
 
 A API é a única dona das regras de negócio. O PWA e o futuro aplicativo Flutter conversam com ela apenas por HTTP/OpenAPI. Não há compartilhamento de código TypeScript com o Flutter.
 
-Detalhes em [docs/architecture.md](docs/architecture.md), [docs/authentication.md](docs/authentication.md), [docs/domain.md](docs/domain.md) e [docs/appointments.md](docs/appointments.md).
+Detalhes em [docs/architecture.md](docs/architecture.md), [docs/authentication.md](docs/authentication.md), [docs/domain.md](docs/domain.md), [docs/appointments.md](docs/appointments.md) e [docs/loyalty.md](docs/loyalty.md).
 
 ## Stack
 
@@ -116,7 +116,7 @@ Em `NODE_ENV=production`, a documentação fica desligada, a menos que `SWAGGER_
 pnpm dev:web
 ```
 
-Abra `http://127.0.0.1:43110`. A página inicial apresenta o Ravion Barber. Entrar e criar conta ficam em `/login` e `/register`. A conta fica em `/conta`. O cliente agenda em `/agendar` e vê os próprios horários em `/agendamentos`. O profissional autenticado usa `/profissional`, `/profissional/agenda` e `/profissional/agendamentos`. O administrador usa `/admin/services`, `/admin/professionals`, `/admin/clients` e `/admin/appointments`. O app é um PWA instalável, com manifesto e service worker de cache do shell. Não há modo offline de dados. O navegador usa o proxy `/api`, então o cookie de sessão permanece HttpOnly.
+Abra `http://127.0.0.1:43110`. A página inicial apresenta o Ravion Barber. Entrar e criar conta ficam em `/login` e `/register`. A conta fica em `/conta`. O cliente agenda em `/agendar`, vê os horários em `/agendamentos` e o extrato em `/pontos`. O profissional autenticado usa `/profissional`, `/profissional/agenda` e `/profissional/agendamentos`. O administrador usa `/admin/services`, `/admin/professionals`, `/admin/clients`, `/admin/clients/:id/points` e `/admin/appointments`. O app é um PWA instalável, com manifesto e service worker de cache do shell. Não há modo offline de dados. O navegador usa o proxy `/api`, então o cookie de sessão permanece HttpOnly.
 
 Para subir API e PWA juntos:
 
@@ -141,4 +141,4 @@ pnpm --filter @ravion/web exec playwright install chromium
 
 ## O que ainda não existe
 
-Saldo de pontos, produtos, financeiro, relatórios e o aplicativo Flutter. A disponibilidade consulta horários e não reserva; a reserva acontece em `POST /api/v1/appointments`. O diretório `apps/mobile` será criado apenas quando o desenvolvimento mobile começar. O Flutter usará esta mesma API. A agenda está descrita em [docs/scheduling.md](docs/scheduling.md) e o agendamento em [docs/appointments.md](docs/appointments.md).
+Catálogo de recompensas, produtos, financeiro, relatórios e o aplicativo Flutter. A disponibilidade consulta horários e não reserva; a reserva acontece em `POST /api/v1/appointments`. Concluir o atendimento credita o `pointsSnapshot` uma vez. O diretório `apps/mobile` será criado apenas quando o desenvolvimento mobile começar. O Flutter usará esta mesma API. A agenda está em [docs/scheduling.md](docs/scheduling.md), o agendamento em [docs/appointments.md](docs/appointments.md) e os pontos em [docs/loyalty.md](docs/loyalty.md).

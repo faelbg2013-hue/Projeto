@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
   Inject,
   Injectable,
   NotFoundException,
@@ -18,6 +19,7 @@ import {
   todayInScheduleZone,
 } from '../../common/time/schedule-clock';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { PointsService } from '../points/points.service';
 import { ScheduleService } from '../schedule/schedule.service';
 import type {
   AdminAppointmentQueryDto,
@@ -57,6 +59,7 @@ function toAppointment(row: AppointmentRow): AppointmentItem {
     serviceName: row.serviceNameSnapshot,
     price: row.servicePriceSnapshot.toFixed(2),
     durationMinutes: row.serviceDurationMinutesSnapshot,
+    pointsSnapshot: row.pointsSnapshot,
     date: start.slice(0, 10),
     time: start.slice(11, 16),
     startAt: start,
@@ -80,6 +83,19 @@ function clockError(error: unknown): never {
   throw new BadRequestException(message);
 }
 
+function isConcurrencyError(error: unknown): boolean {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return error.code === 'P2028' || error.code === 'P2034';
+  }
+  const message = error instanceof Error ? error.message : '';
+  return (
+    message.includes('Lock wait timeout') ||
+    message.includes('Deadlock') ||
+    message.includes('Transaction already closed') ||
+    message.includes('Transaction API error')
+  );
+}
+
 function isRetryableWrite(error: unknown): boolean {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
     const message = error instanceof Error ? error.message : '';
@@ -93,6 +109,7 @@ export class AppointmentsService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(ScheduleService) private readonly schedule: ScheduleService,
+    @Inject(PointsService) private readonly points: PointsService,
   ) {}
 
   async create(
@@ -211,6 +228,7 @@ export class AppointmentsService {
               serviceNameSnapshot: serviceNow.name,
               servicePriceSnapshot: serviceNow.price,
               serviceDurationMinutesSnapshot: serviceNow.durationMinutes,
+              pointsSnapshot: serviceNow.points,
               idempotencyKey: key,
             },
             include: appointmentInclude,
@@ -314,39 +332,63 @@ export class AppointmentsService {
     appointmentId: string,
     action: 'cancel' | 'complete' | 'no-show',
   ): Promise<AppointmentItem> {
-    const updated = await this.prisma.$transaction(
-      async (tx) => {
-        const locked = await tx.$queryRaw<Array<{ id: string }>>`
-          SELECT id FROM appointments WHERE id = ${appointmentId} FOR UPDATE
-        `;
-        if (locked.length === 0) {
-          throw new NotFoundException(NOT_FOUND);
-        }
-        const current = await tx.appointment.findUnique({
-          where: { id: appointmentId },
-          include: appointmentInclude,
-        });
-        if (!current) {
-          throw new NotFoundException(NOT_FOUND);
-        }
-        this.assertVisible(actor, current, action);
-        if (current.status !== AppointmentStatus.CONFIRMED) {
-          throw new ConflictException(TRANSITION);
-        }
-        return tx.appointment.update({
-          where: { id: appointmentId },
-          data:
-            action === 'cancel'
-              ? { status: AppointmentStatus.CANCELLED, cancelledAt: new Date() }
-              : action === 'complete'
-                ? { status: AppointmentStatus.COMPLETED, completedAt: new Date() }
-                : { status: AppointmentStatus.NO_SHOW },
-          include: appointmentInclude,
-        });
-      },
-      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, timeout: 10_000 },
-    );
-    return toAppointment(updated);
+    try {
+      const updated = await this.prisma.$transaction(
+        async (tx) => {
+          const locked = await tx.$queryRaw<Array<{ id: string }>>`
+            SELECT id FROM appointments WHERE id = ${appointmentId} FOR UPDATE
+          `;
+          if (locked.length === 0) {
+            throw new NotFoundException(NOT_FOUND);
+          }
+          const current = await tx.appointment.findUnique({
+            where: { id: appointmentId },
+            include: appointmentInclude,
+          });
+          if (!current) {
+            throw new NotFoundException(NOT_FOUND);
+          }
+          this.assertVisible(actor, current, action);
+          if (current.status !== AppointmentStatus.CONFIRMED) {
+            throw new ConflictException(TRANSITION);
+          }
+          const updated = await tx.appointment.update({
+            where: { id: appointmentId },
+            data:
+              action === 'cancel'
+                ? { status: AppointmentStatus.CANCELLED, cancelledAt: new Date() }
+                : action === 'complete'
+                  ? { status: AppointmentStatus.COMPLETED, completedAt: new Date() }
+                  : { status: AppointmentStatus.NO_SHOW },
+            include: appointmentInclude,
+          });
+          if (action === 'complete') {
+            await this.points.recordEarn(tx, {
+              tenantId: updated.tenantId,
+              clientId: updated.clientId,
+              appointmentId: updated.id,
+              points: updated.pointsSnapshot,
+              serviceName: updated.serviceNameSnapshot,
+              createdByUserId: actor.id,
+            });
+          }
+          return updated;
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, timeout: 10_000 },
+      );
+      return toAppointment(updated);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException(TRANSITION);
+      }
+      if (isConcurrencyError(error)) {
+        throw new ConflictException(TRANSITION);
+      }
+      throw error;
+    }
   }
 
   private assertVisible(

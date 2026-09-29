@@ -33,6 +33,9 @@ export class AppointmentResponseDto implements AppointmentItem {
   @ApiProperty({ type: Number, example: 30, description: 'Duração em minutos no momento da criação.' })
   durationMinutes!: number;
 
+  @ApiProperty({ type: Number, example: 10, description: 'Pontos do serviço no momento da criação.' })
+  pointsSnapshot!: number;
+
   @ApiProperty({ type: String, example: '2026-10-05' })
   date!: string;
 

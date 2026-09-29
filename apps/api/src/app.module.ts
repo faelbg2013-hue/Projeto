@@ -11,6 +11,7 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ClientsModule } from './modules/clients/clients.module';
 import { HealthModule } from './modules/health/health.module';
+import { PointsModule } from './modules/points/points.module';
 import { ProfessionalsModule } from './modules/professionals/professionals.module';
 import { ScheduleModule } from './modules/schedule/schedule.module';
 import { ServicesModule } from './modules/services/services.module';
@@ -42,6 +43,7 @@ import { UsersModule } from './modules/users/users.module';
     ScheduleModule,
     ServicesModule,
     AppointmentsModule,
+    PointsModule,
     HealthModule,
   ],
   providers: [

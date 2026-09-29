@@ -26,6 +26,13 @@ enum AppointmentStatus {
   NO_SHOW
 }
 
+enum PointsTransactionType {
+  EARN
+  REDEEM
+  ADJUSTMENT_CREDIT
+  ADJUSTMENT_DEBIT
+}
+
 model Tenant {
   id        String        @id @default(uuid()) @db.Char(36)
   name      String        @db.VarChar(120)
@@ -42,6 +49,7 @@ model Tenant {
   timeBlocks           ProfessionalTimeBlock[]
   scheduleExceptions   ProfessionalScheduleException[]
   appointments         Appointment[]
+  pointsTransactions   PointsTransaction[]
 
   @@map("tenants")
 }
@@ -58,8 +66,9 @@ model User {
   updatedAt    DateTime      @updatedAt
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
   sessions     UserSession[]
-  client       Client?
-  professional Professional?
+  client             Client?
+  professional       Professional?
+  pointsAuthored     PointsTransaction[] @relation("PointsAuthor")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -92,7 +101,8 @@ model Client {
   updatedAt DateTime @updatedAt
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
+  appointments       Appointment[]
+  pointsTransactions PointsTransaction[]
 
   @@unique([tenantId, userId])
   @@index([tenantId])
@@ -191,7 +201,7 @@ model Service {
   @@map("services")
 }
 
-/// Atendimento preservado. Preço, nome e duração são o serviço no momento da criação.
+/// Atendimento preservado. Preço, nome, duração e pontos são o serviço no momento da criação.
 model Appointment {
   id                              String            @id @default(uuid()) @db.Char(36)
   tenantId                        String            @db.Char(36)
@@ -205,6 +215,7 @@ model Appointment {
   serviceNameSnapshot             String            @db.VarChar(120)
   servicePriceSnapshot            Decimal           @db.Decimal(10, 2)
   serviceDurationMinutesSnapshot  Int
+  pointsSnapshot                  Int               @default(0)
   idempotencyKey                  String?           @db.VarChar(80)
   cancelledAt                     DateTime?
   completedAt                     DateTime?
@@ -213,10 +224,34 @@ model Appointment {
   tenant                          Tenant            @relation(fields: [tenantId], references: [id])
   client                          Client            @relation(fields: [clientId], references: [id])
   professional                    Professional      @relation(fields: [professionalId], references: [id])
-  service                         Service           @relation(fields: [serviceId], references: [id])
+  service                         Service              @relation(fields: [serviceId], references: [id])
+  pointsTransactions              PointsTransaction[]
 
   @@unique([tenantId, clientId, idempotencyKey])
   @@index([tenantId, professionalId, startAt])
   @@index([tenantId, clientId, startAt])
   @@map("appointments")
+}
+
+/// Extrato imutável. O saldo é a soma dos créditos menos a soma dos débitos. points é sempre positivo.
+model PointsTransaction {
+  id                String                 @id @default(uuid()) @db.Char(36)
+  tenantId          String                 @db.Char(36)
+  clientId          String                 @db.Char(36)
+  type              PointsTransactionType
+  points            Int
+  reason            String                 @db.VarChar(240)
+  appointmentId     String?                @db.Char(36)
+  earnAppointmentId String?                @db.Char(36)
+  createdByUserId   String?                @db.Char(36)
+  createdAt         DateTime               @default(now())
+  tenant            Tenant                 @relation(fields: [tenantId], references: [id])
+  client            Client                 @relation(fields: [clientId], references: [id])
+  appointment       Appointment?           @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  createdBy         User?                  @relation("PointsAuthor", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, earnAppointmentId])
+  @@index([tenantId, clientId, createdAt])
+  @@index([appointmentId])
+  @@map("points_transactions")
 }

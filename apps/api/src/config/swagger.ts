@@ -19,7 +19,7 @@ Convenções:
 - Depois da autenticação, o tenant vem do token e do usuário no banco. Um tenantId no corpo não autoriza acesso a outro contexto.
 - Papéis: CLIENT, PROFESSIONAL e ADMIN. O cadastro público cria User e Client na mesma transação. Professional só nasce por um ADMIN.
 - Cliente, profissional e serviço pertencem ao tenant da sessão. tenantId enviado pelo cliente não autoriza outro contexto.
-- Serviço guarda preço decimal, duração em minutos e pontuação configurável. A agenda calcula disponibilidade. O agendamento confirma o horário na gravação e guarda o preço e a duração daquele momento. Ainda não há pagamento, saldo de pontos nem financeiro.
+- Serviço guarda preço decimal, duração em minutos e pontuação configurável. A agenda calcula disponibilidade. O agendamento confirma o horário na gravação e guarda preço, duração e pontos daquele momento. Concluir o atendimento gera um crédito no ledger de pontos. Ainda não há pagamento, recompensa nem financeiro.
 - Listagens aceitam page e pageSize. O filtro isActive é específico de clientes, profissionais e serviços.
 - O envelope de paginação é { data, meta }, com meta em PaginationMetaDto. A ordenação padrão desses recursos é createdAt descendente.`;
 
@@ -49,6 +49,7 @@ export function buildSwaggerConfig(port: number): Omit<OpenAPIObject, 'paths'> {
     .addTag('schedule', 'Agenda semanal, bloqueios, exceções e disponibilidade')
     .addTag('services', 'Catálogo de serviços')
     .addTag('appointments', 'Agendamentos e proteção contra dupla reserva')
+    .addTag('points', 'Ledger de pontos e saldo do cliente')
     .build();
 }
 

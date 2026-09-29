@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useAuth } from '../auth/auth-context';
 import { BrandMark } from '../components/BrandMark';
+import { PointsCard } from '../components/PointsCard';
 import { ServiceCatalog } from '../components/ServiceCatalog';
 import { useActiveServices } from '../hooks/useActiveServices';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -17,6 +18,7 @@ const accountLinks: Record<UserRole, ReadonlyArray<{ to: string; label: string }
   CLIENT: [
     { to: '/agendar', label: 'Agendar' },
     { to: '/agendamentos', label: 'Meus agendamentos' },
+    { to: '/pontos', label: 'Meus pontos' },
   ],
   PROFESSIONAL: [
     { to: '/profissional', label: 'Área profissional' },
@@ -83,6 +85,7 @@ export function AccountPage() {
             ))}
           </nav>
         ) : null}
+        {user.role === 'CLIENT' ? <PointsCard /> : null}
         <ServiceCatalog
           services={catalog.services}
           loading={catalog.loading}

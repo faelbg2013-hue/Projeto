@@ -332,6 +332,7 @@ async function ensureDevelopmentAppointment(
       serviceNameSnapshot: service.name,
       servicePriceSnapshot: service.price,
       serviceDurationMinutesSnapshot: service.durationMinutes,
+      pointsSnapshot: service.points,
     },
   });
 }

@@ -162,7 +162,8 @@ export class AppointmentsController {
   @ApiOperation({
     operationId: 'completeAppointment',
     summary: 'Marca o atendimento como realizado',
-    description: 'PROFESSIONAL do atendimento ou ADMIN. Preenche completedAt. Não gera pontos.',
+    description:
+      'PROFESSIONAL do atendimento ou ADMIN. Preenche completedAt e, na mesma transação, gera um único EARN com os pontos do agendamento. Serviço com zero pontos não cria movimentação. Uma segunda conclusão não gera outro crédito.',
   })
   @ApiOkResponse({ type: AppointmentResponseDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })

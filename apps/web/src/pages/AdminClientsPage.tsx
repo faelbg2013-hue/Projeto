@@ -1,5 +1,6 @@
 import type { ClientProfile } from '@ravion/types';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { SessionFrame, adminLinks } from '../components/SessionFrame';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { clientsService } from '../services/clients.service';
@@ -81,13 +82,21 @@ export function AdminClientsPage() {
             </div>
             <p className="mt-2 break-all text-sm text-muted">{client.user.email}</p>
             <p className="mt-1 text-sm text-muted">Cliente</p>
-            <button
-              type="button"
-              onClick={() => void toggle(client)}
-              className="mt-4 text-[0.68rem] uppercase tracking-[0.28em] text-foreground"
-            >
-              {client.isActive ? 'Desativar' : 'Ativar'}
-            </button>
+            <div className="mt-4 flex flex-wrap gap-4">
+              <Link
+                to={`/admin/clients/${client.id}/points`}
+                className="text-[0.68rem] uppercase tracking-[0.28em] text-accent"
+              >
+                Pontos
+              </Link>
+              <button
+                type="button"
+                onClick={() => void toggle(client)}
+                className="text-[0.68rem] uppercase tracking-[0.28em] text-foreground"
+              >
+                {client.isActive ? 'Desativar' : 'Ativar'}
+              </button>
+            </div>
           </article>
         ))}
       </div>

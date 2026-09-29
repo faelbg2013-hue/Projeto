@@ -39,7 +39,7 @@ A criação grava `CONFIRMED`. `PENDING` existe no enum e ocupa horário, mas es
 
 Transições permitidas, todas a partir de `CONFIRMED`:
 
-- `COMPLETED` preenche `completedAt`. Não move pontos.
+- `COMPLETED` preenche `completedAt` e gera um único crédito de pontos com `pointsSnapshot`. O extrato está em [loyalty.md](loyalty.md).
 - `CANCELLED` preenche `cancelledAt`. O registro permanece.
 - `NO_SHOW` não preenche `cancelledAt` nem `completedAt`.
 

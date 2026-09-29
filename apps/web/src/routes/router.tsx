@@ -4,6 +4,7 @@ import { RequireRole } from '../auth/RequireRole';
 import { RootLayout } from '../layouts/RootLayout';
 import { AccountPage } from '../pages/AccountPage';
 import { AdminAppointmentsPage } from '../pages/AdminAppointmentsPage';
+import { AdminClientPointsPage } from '../pages/AdminClientPointsPage';
 import { AgendaPage } from '../pages/AgendaPage';
 import { AdminClientsPage } from '../pages/AdminClientsPage';
 import { AdminProfessionalsPage } from '../pages/AdminProfessionalsPage';
@@ -13,6 +14,7 @@ import { HomePage } from '../pages/HomePage';
 import { LoginPage } from '../pages/LoginPage';
 import { MyAppointmentsPage } from '../pages/MyAppointmentsPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
+import { PointsPage } from '../pages/PointsPage';
 import { ProfessionalAppointmentsPage } from '../pages/ProfessionalAppointmentsPage';
 import { ProfessionalPage } from '../pages/ProfessionalPage';
 import { RegisterPage } from '../pages/RegisterPage';
@@ -34,6 +36,7 @@ export const appRoutes: RouteObject[] = [
             children: [
               { path: 'agendar', element: <BookingPage /> },
               { path: 'agendamentos', element: <MyAppointmentsPage /> },
+              { path: 'pontos', element: <PointsPage /> },
             ],
           },
           {
@@ -55,6 +58,7 @@ export const appRoutes: RouteObject[] = [
                 element: <AgendaPage scope="admin" />,
               },
               { path: 'admin/clients', element: <AdminClientsPage /> },
+              { path: 'admin/clients/:clientId/points', element: <AdminClientPointsPage /> },
             ],
           },
         ],
