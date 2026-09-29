@@ -58,7 +58,7 @@ Módulos atuais:
 - `points`: ledger, saldo, extrato e ajuste administrativo
 - infraestrutura Prisma, fora de `modules`, porque não é um módulo de negócio
 
-Não há catálogo de recompensas, produtos, financeiro ou relatórios. O modelo de domínio está em [domain.md](domain.md), a agenda em [scheduling.md](scheduling.md), o agendamento em [appointments.md](appointments.md) e os pontos em [loyalty.md](loyalty.md).
+Não há catálogo de recompensas, descontos, cupons, produtos, financeiro ou relatórios. O modelo de domínio está em [domain.md](domain.md), a agenda em [scheduling.md](scheduling.md), o agendamento em [appointments.md](appointments.md), os pontos em [loyalty.md](loyalty.md) e o resgate em [points-redemption.md](points-redemption.md).
 
 Resposta de saúde:
 

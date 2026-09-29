@@ -164,6 +164,9 @@ describe('points ledger', () => {
   });
 
   beforeEach(async () => {
+    await prisma.pointsTransaction.deleteMany({
+      where: { tenantId: { in: tenantIds }, reversalOfTransactionId: { not: null } },
+    });
     await prisma.pointsTransaction.deleteMany({ where: { tenantId: { in: tenantIds } } });
     await prisma.appointment.deleteMany({ where: { tenantId: { in: tenantIds } } });
     await prisma.professionalSchedule.deleteMany({ where: { professionalId: professionalAId } });
@@ -182,6 +185,9 @@ describe('points ledger', () => {
 
   afterAll(async () => {
     await app?.close();
+    await prisma.pointsTransaction.deleteMany({
+      where: { tenantId: { in: tenantIds }, reversalOfTransactionId: { not: null } },
+    });
     await prisma.pointsTransaction.deleteMany({ where: { tenantId: { in: tenantIds } } });
     await prisma.appointment.deleteMany({ where: { tenantId: { in: tenantIds } } });
     await prisma.professionalSchedule.deleteMany({ where: { tenantId: { in: tenantIds } } });

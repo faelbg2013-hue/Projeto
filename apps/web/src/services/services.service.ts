@@ -9,6 +9,7 @@ export interface ServiceInput {
   price: number;
   durationMinutes: number;
   points: number;
+  redemptionPoints?: number | null;
 }
 
 export interface ServiceListQuery {

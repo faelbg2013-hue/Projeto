@@ -255,6 +255,9 @@ describe('appointments', () => {
 
   beforeEach(async () => {
     await prisma.pointsTransaction.deleteMany({
+      where: { type: 'REDEEM_REVERSAL', appointment: { professionalId: professionalAId } },
+    });
+    await prisma.pointsTransaction.deleteMany({
       where: { appointment: { professionalId: professionalAId } },
     });
     await prisma.appointment.deleteMany({ where: { professionalId: professionalAId } });
@@ -276,6 +279,9 @@ describe('appointments', () => {
   afterAll(async () => {
     await app?.close();
     await prisma.userSession.deleteMany({ where: { tenantId: { in: tenantIds } } });
+    await prisma.pointsTransaction.deleteMany({
+      where: { tenantId: { in: tenantIds }, reversalOfTransactionId: { not: null } },
+    });
     await prisma.pointsTransaction.deleteMany({ where: { tenantId: { in: tenantIds } } });
     await prisma.appointment.deleteMany({ where: { tenantId: { in: tenantIds } } });
     await prisma.professionalScheduleException.deleteMany({ where: { tenantId: { in: tenantIds } } });
@@ -421,6 +427,9 @@ describe('appointments', () => {
       .expect(201);
     expect(hour.body.endAt).toBe(`${slot.date}T12:00:00-03:00`);
 
+    await prisma.pointsTransaction.deleteMany({
+      where: { type: 'REDEEM_REVERSAL', appointment: { professionalId: professionalAId } },
+    });
     await prisma.pointsTransaction.deleteMany({
       where: { appointment: { professionalId: professionalAId } },
     });

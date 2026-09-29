@@ -36,7 +36,7 @@ export const pointsService = {
   },
 };
 
-const creditTypes = new Set<PointsTransactionType>(['EARN', 'ADJUSTMENT_CREDIT']);
+const creditTypes = new Set<PointsTransactionType>(['EARN', 'ADJUSTMENT_CREDIT', 'REDEEM_REVERSAL']);
 
 export function signedPoints(type: PointsTransactionType, points: number): string {
   return `${creditTypes.has(type) ? '+' : '-'}${points}`;
@@ -45,6 +45,7 @@ export function signedPoints(type: PointsTransactionType, points: number): strin
 export const pointsTypeLabel: Record<PointsTransactionType, string> = {
   EARN: 'Atendimento',
   REDEEM: 'Resgate',
+  REDEEM_REVERSAL: 'Devolução',
   ADJUSTMENT_CREDIT: 'Crédito',
   ADJUSTMENT_DEBIT: 'Débito',
 };

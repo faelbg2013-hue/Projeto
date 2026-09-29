@@ -20,7 +20,7 @@ PWA Web (React + Vite + TypeScript)
 
 A API é a única dona das regras de negócio. O PWA e o futuro aplicativo Flutter conversam com ela apenas por HTTP/OpenAPI. Não há compartilhamento de código TypeScript com o Flutter.
 
-Detalhes em [docs/architecture.md](docs/architecture.md), [docs/authentication.md](docs/authentication.md), [docs/domain.md](docs/domain.md), [docs/appointments.md](docs/appointments.md) e [docs/loyalty.md](docs/loyalty.md).
+Detalhes em [docs/architecture.md](docs/architecture.md), [docs/authentication.md](docs/authentication.md), [docs/domain.md](docs/domain.md), [docs/appointments.md](docs/appointments.md), [docs/loyalty.md](docs/loyalty.md) e [docs/points-redemption.md](docs/points-redemption.md).
 
 ## Stack
 
@@ -141,4 +141,4 @@ pnpm --filter @ravion/web exec playwright install chromium
 
 ## O que ainda não existe
 
-Catálogo de recompensas, produtos, financeiro, relatórios e o aplicativo Flutter. A disponibilidade consulta horários e não reserva; a reserva acontece em `POST /api/v1/appointments`. Concluir o atendimento credita o `pointsSnapshot` uma vez. O diretório `apps/mobile` será criado apenas quando o desenvolvimento mobile começar. O Flutter usará esta mesma API. A agenda está em [docs/scheduling.md](docs/scheduling.md), o agendamento em [docs/appointments.md](docs/appointments.md) e os pontos em [docs/loyalty.md](docs/loyalty.md).
+Catálogo de recompensas, descontos, cupons, produtos, financeiro, relatórios e o aplicativo Flutter. A disponibilidade consulta horários e não reserva; a reserva acontece em `POST /api/v1/appointments`. Esse pedido pode usar pontos. Concluir o atendimento credita o `pointsSnapshot` uma vez. O Ravion Barber não processa pagamentos: o preço em reais é o valor cadastrado do serviço, e dinheiro, PIX ou cartão ficam fora da aplicação. O diretório `apps/mobile` será criado apenas quando o desenvolvimento mobile começar. O Flutter usará esta mesma API. A agenda está em [docs/scheduling.md](docs/scheduling.md), o agendamento em [docs/appointments.md](docs/appointments.md), os pontos em [docs/loyalty.md](docs/loyalty.md) e o resgate em [docs/points-redemption.md](docs/points-redemption.md).

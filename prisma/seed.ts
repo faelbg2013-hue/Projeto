@@ -240,6 +240,7 @@ async function ensureServices(prisma: PrismaClient, tenantId: string): Promise<v
       price: '45.00',
       durationMinutes: 30,
       points: 10,
+      redemptionPoints: 50,
     },
     {
       name: 'Barba',
@@ -247,6 +248,7 @@ async function ensureServices(prisma: PrismaClient, tenantId: string): Promise<v
       price: '30.00',
       durationMinutes: 20,
       points: 5,
+      redemptionPoints: null,
     },
     {
       name: 'Corte + Barba',
@@ -254,6 +256,7 @@ async function ensureServices(prisma: PrismaClient, tenantId: string): Promise<v
       price: '70.00',
       durationMinutes: 50,
       points: 15,
+      redemptionPoints: 100,
     },
   ];
 
@@ -270,8 +273,16 @@ async function ensureServices(prisma: PrismaClient, tenantId: string): Promise<v
           price: item.price,
           durationMinutes: item.durationMinutes,
           points: item.points,
+          redemptionPoints: item.redemptionPoints,
           isActive: true,
         },
+      });
+      continue;
+    }
+    if (existing.redemptionPoints == null && item.redemptionPoints != null) {
+      await prisma.service.update({
+        where: { id: existing.id },
+        data: { redemptionPoints: item.redemptionPoints },
       });
     }
   }

@@ -28,6 +28,17 @@ export class CreateAppointmentDto {
   @IsString()
   @MaxLength(500)
   notes?: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    enum: ['NORMAL', 'POINTS'],
+    default: 'NORMAL',
+    description:
+      'NORMAL reserva o horário sem debitar pontos. POINTS debita redemptionPoints do serviço relido no servidor. O cliente não envia a quantidade.',
+  })
+  @IsOptional()
+  @IsIn(['NORMAL', 'POINTS'])
+  bookingMode?: 'NORMAL' | 'POINTS';
 }
 
 export class AppointmentMeQueryDto extends PaginationQueryDto {

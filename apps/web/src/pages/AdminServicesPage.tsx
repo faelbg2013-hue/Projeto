@@ -28,6 +28,7 @@ export function AdminServicesPage() {
   const [price, setPrice] = useState('0.00');
   const [durationMinutes, setDurationMinutes] = useState('30');
   const [points, setPoints] = useState('0');
+  const [redemptionPoints, setRedemptionPoints] = useState('');
 
   async function load(nextFilter: Filter): Promise<void> {
     setLoading(true);
@@ -79,6 +80,7 @@ export function AdminServicesPage() {
     setPrice('0.00');
     setDurationMinutes('30');
     setPoints('0');
+    setRedemptionPoints('');
   }
 
   function beginEdit(service: ServiceItem): void {
@@ -88,6 +90,7 @@ export function AdminServicesPage() {
     setPrice(service.price);
     setDurationMinutes(String(service.durationMinutes));
     setPoints(String(service.points));
+    setRedemptionPoints(service.redemptionPoints == null ? '' : String(service.redemptionPoints));
     setFormError(null);
   }
 
@@ -113,6 +116,12 @@ export function AdminServicesPage() {
       setFormError('A pontuação não pode ser negativa.');
       return;
     }
+    const trimmedRedemption = redemptionPoints.trim();
+    const parsedRedemption = trimmedRedemption === '' ? null : Number(trimmedRedemption);
+    if (parsedRedemption !== null && (!Number.isInteger(parsedRedemption) || parsedRedemption < 1)) {
+      setFormError('O resgate precisa ser um inteiro maior que zero.');
+      return;
+    }
 
     const payload = {
       name: name.trim(),
@@ -120,6 +129,7 @@ export function AdminServicesPage() {
       price: parsedPrice,
       durationMinutes: parsedDuration,
       points: parsedPoints,
+      redemptionPoints: parsedRedemption,
     };
 
     setPending(true);
@@ -169,6 +179,12 @@ export function AdminServicesPage() {
           type="number"
         />
         <Field label="Pontuação" value={points} onChange={setPoints} type="number" />
+        <Field
+          label="Pontos para resgate"
+          value={redemptionPoints}
+          onChange={setRedemptionPoints}
+          type="number"
+        />
         {formError ? (
           <p role="alert" className="text-sm normal-case tracking-normal text-foreground">
             {formError}
@@ -230,6 +246,7 @@ export function AdminServicesPage() {
             ) : null}
             <p className="mt-3 text-sm text-muted">
               R$ {service.price} · {service.durationMinutes} min · Pontuação {service.points}
+              {service.redemptionPoints ? ` · Resgate ${service.redemptionPoints}` : ''}
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <button

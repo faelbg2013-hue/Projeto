@@ -40,7 +40,7 @@ A criação grava `CONFIRMED`. `PENDING` existe no enum e ocupa horário, mas es
 Transições permitidas, todas a partir de `CONFIRMED`:
 
 - `COMPLETED` preenche `completedAt` e gera um único crédito de pontos com `pointsSnapshot`. O extrato está em [loyalty.md](loyalty.md).
-- `CANCELLED` preenche `cancelledAt`. O registro permanece.
+- `CANCELLED` preenche `cancelledAt`. Se `bookingMode` for `POINTS`, a mesma transação devolve os pontos do resgate. O registro permanece.
 - `NO_SHOW` não preenche `cancelledAt` nem `completedAt`.
 
 `COMPLETED`, `CANCELLED` e `NO_SHOW` não voltam para `CONFIRMED`. Cancelar de novo, concluir um cancelado ou cancelar um atendimento concluído responde 409 `A transição de status não é permitida.` Não há prazo de "até X horas antes". Não há endpoint de reagendamento.

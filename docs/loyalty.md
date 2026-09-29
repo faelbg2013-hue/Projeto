@@ -11,11 +11,14 @@ O futuro aplicativo mobile do Ravion Barber será desenvolvido em Flutter utiliz
 | Tipo | Efeito | Quem cria |
 | ---- | ------ | --------- |
 | `EARN` | crédito | somente a conclusão do atendimento |
-| `REDEEM` | débito | reservado para recompensas; não há endpoint público |
+| `REDEEM` | débito | agendamento com `bookingMode` `POINTS` |
+| `REDEEM_REVERSAL` | crédito | cancelamento daquele resgate, uma vez |
 | `ADJUSTMENT_CREDIT` | crédito | ADMIN do tenant |
 | `ADJUSTMENT_DEBIT` | débito | ADMIN do tenant |
 
-Créditos: `EARN` e `ADJUSTMENT_CREDIT`. Débitos: `REDEEM` e `ADJUSTMENT_DEBIT`.
+Créditos: `EARN`, `ADJUSTMENT_CREDIT` e `REDEEM_REVERSAL`. Débitos: `REDEEM` e `ADJUSTMENT_DEBIT`.
+
+O uso no agendamento está em [points-redemption.md](points-redemption.md).
 
 Não existe alteração nem exclusão de linha. Um engano se corrige com um novo ajuste e um motivo. `createdByUserId` sai da sessão e pode ficar nulo se esse usuário for removido. `tenantId` também sai da sessão.
 
@@ -31,7 +34,7 @@ Não existe alteração nem exclusão de linha. Um engano se corrige com um novo
 2. grava `COMPLETED` e `completedAt`;
 3. se `pointsSnapshot > 0`, insere um `EARN` com `earnAppointmentId` igual ao agendamento.
 
-Serviço com zero pontos conclui sem movimentação. Cancelar e `NO_SHOW` não geram pontos. `COMPLETED` não volta para `CANCELLED` e não há estorno nesta fase.
+Serviço com zero pontos conclui sem movimentação. `NO_SHOW` não gera pontos e não devolve um resgate. `COMPLETED` não volta para `CANCELLED`. Cancelar um agendamento `POINTS` devolve o resgate com `REDEEM_REVERSAL`, sem editar o `REDEEM`.
 
 A unicidade é `(tenantId, earnAppointmentId)`. Só o `EARN` preenche essa coluna. Vários ajustes e futuros resgates continuam possíveis, porque a coluna fica nula e o MySQL permite várias nulas no índice único. MySQL não deixa um `CHECK` citar `appointmentId` enquanto essa coluna tem ação de foreign key, então a igualdade `appointmentId = earnAppointmentId` fica na gravação do serviço.
 

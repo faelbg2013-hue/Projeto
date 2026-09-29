@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { AppointmentItem } from '@ravion/types';
+import type { AppointmentItem, BookingMode } from '@ravion/types';
 import { PaginationMetaDto } from '../../../common/dto/pagination-meta.response';
 
 export class AppointmentResponseDto implements AppointmentItem {
@@ -33,8 +33,28 @@ export class AppointmentResponseDto implements AppointmentItem {
   @ApiProperty({ type: Number, example: 30, description: 'Duração em minutos no momento da criação.' })
   durationMinutes!: number;
 
-  @ApiProperty({ type: Number, example: 10, description: 'Pontos do serviço no momento da criação.' })
+  @ApiProperty({
+    type: Number,
+    example: 10,
+    description: 'Pontos que o atendimento concluído gera. É o points do serviço no momento da criação.',
+  })
   pointsSnapshot!: number;
+
+  @ApiProperty({
+    type: String,
+    enum: ['NORMAL', 'POINTS'],
+    example: 'NORMAL',
+    description: 'NORMAL não debita pontos. POINTS registra o resgate feito na criação. Não é forma de pagamento.',
+  })
+  bookingMode!: BookingMode;
+
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    example: 50,
+    description: 'Pontos debitados na criação quando bookingMode é POINTS. Null quando o modo é NORMAL.',
+  })
+  redemptionPointsSnapshot!: number | null;
 
   @ApiProperty({ type: String, example: '2026-10-05' })
   date!: string;

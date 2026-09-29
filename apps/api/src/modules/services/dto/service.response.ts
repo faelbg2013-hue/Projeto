@@ -29,9 +29,17 @@ export class ServiceResponseDto implements ServiceItem {
     type: Number,
     example: 10,
     minimum: 0,
-    description: 'Pontuação configurada do serviço. Não é saldo nem extrato de fidelidade.',
+    description: 'Pontos que o cliente ganha quando o atendimento é concluído. Não é o custo do resgate.',
   })
   points!: number;
+
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    example: 50,
+    description: 'Pontos necessários para agendar no modo POINTS. Null significa que o serviço não aceita resgate.',
+  })
+  redemptionPoints!: number | null;
 
   @ApiProperty({ type: Boolean, example: true })
   isActive!: boolean;

@@ -52,7 +52,7 @@ export class AppointmentsController {
     operationId: 'createAppointment',
     summary: 'Cria um agendamento confirmado para o cliente autenticado',
     description:
-      'Somente CLIENT. clientId, tenantId, status, preço, duração, endAt e snapshots do corpo são rejeitados. O fim é calculado pela duração do serviço. A gravação trava a linha do profissional e consulta de novo a disponibilidade, incluindo agendamentos já confirmados. Horário ocupado responde 409. Idempotency-Key opcional evita um segundo agendamento no duplo clique.',
+      'Somente CLIENT, sempre para o próprio cliente. clientId, tenantId, status, preço, duração, pontos, redemptionPointsSnapshot e newBalance são rejeitados. bookingMode POINTS relê o serviço, trava a linha do cliente e a do profissional, e cria o agendamento junto com um REDEEM. Saldo insuficiente ou horário ocupado responde 409 e não grava nenhum dos dois. Idempotency-Key repetida não gera outro resgate. O preço em reais não é um pagamento.',
   })
   @ApiHeader({
     name: 'Idempotency-Key',
@@ -143,7 +143,7 @@ export class AppointmentsController {
     operationId: 'cancelAppointment',
     summary: 'Cancela um agendamento confirmado',
     description:
-      'CLIENT cancela o próprio. PROFESSIONAL cancela os vinculados a ele. ADMIN cancela no tenant. Só CONFIRMED pode ser cancelado. O registro permanece e cancelledAt é preenchido.',
+      'CLIENT cancela o próprio. PROFESSIONAL cancela os vinculados a ele. ADMIN cancela no tenant. Só CONFIRMED pode ser cancelado. Se bookingMode for POINTS, a mesma transação cria um único REDEEM_REVERSAL com os pontos do resgate original. NO_SHOW não devolve pontos. Uma segunda chamada não devolve de novo.',
   })
   @ApiOkResponse({ type: AppointmentResponseDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })

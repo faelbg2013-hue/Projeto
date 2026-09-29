@@ -204,6 +204,9 @@ export function AdminClientPointsPage() {
             </div>
             <h2 className="mt-3 break-words text-lg text-foreground">{pointsTypeLabel[item.type]}</h2>
             <p className="mt-1 break-words text-sm text-muted">{item.reason}</p>
+            {item.appointmentId ? (
+              <p className="mt-1 break-all text-sm text-muted">Agendamento {item.appointmentId}</p>
+            ) : null}
           </article>
         ))}
       </div>

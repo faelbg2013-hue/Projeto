@@ -9,6 +9,7 @@ export interface CreateAppointmentInput {
   date: string;
   time: string;
   notes?: string | null;
+  bookingMode?: 'NORMAL' | 'POINTS';
 }
 
 export interface AppointmentListQuery {

@@ -36,6 +36,7 @@ const TRANSITION = 'A transição de status não é permitida.';
 const IDEMPOTENCY = 'A chave de idempotência já foi utilizada.';
 const INACTIVE_CLIENT = 'O cliente está inativo.';
 const INVALID_KEY = 'Chave de idempotência inválida.';
+const REDEMPTION_UNAVAILABLE = 'Este serviço não aceita resgate de pontos.';
 const KEY_PATTERN = /^[A-Za-z0-9_-]{8,80}$/;
 
 const appointmentInclude = {
@@ -60,6 +61,8 @@ function toAppointment(row: AppointmentRow): AppointmentItem {
     price: row.servicePriceSnapshot.toFixed(2),
     durationMinutes: row.serviceDurationMinutesSnapshot,
     pointsSnapshot: row.pointsSnapshot,
+    bookingMode: row.bookingMode,
+    redemptionPointsSnapshot: row.redemptionPointsSnapshot,
     date: start.slice(0, 10),
     time: start.slice(11, 16),
     startAt: start,
@@ -137,6 +140,7 @@ export class AppointmentsService {
       throw new BadRequestException(PAST_TIME);
     }
     const notes = optionalNotes(input.notes);
+    const bookingMode = input.bookingMode ?? 'NORMAL';
 
     const client = await this.prisma.client.findUnique({ where: { userId: actor.id } });
     if (!client) {
@@ -168,6 +172,14 @@ export class AppointmentsService {
     try {
       const created = await this.prisma.$transaction(
         async (tx) => {
+          if (bookingMode === 'POINTS') {
+            const lockedClient = await tx.$queryRaw<Array<{ id: string }>>`
+              SELECT id FROM clients WHERE id = ${client.id} AND tenantId = ${actor.tenantId} FOR UPDATE
+            `;
+            if (lockedClient.length === 0) {
+              throw new NotFoundException(NOT_FOUND);
+            }
+          }
           const locked = await tx.$queryRaw<Array<{ id: string }>>`
             SELECT id FROM professionals WHERE id = ${professional.id} AND tenantId = ${actor.tenantId} FOR UPDATE
           `;
@@ -215,7 +227,13 @@ export class AppointmentsService {
             throw new ConflictException(TAKEN);
           }
 
-          return tx.appointment.create({
+          const redemptionPoints =
+            bookingMode === 'POINTS' ? serviceNow.redemptionPoints : null;
+          if (bookingMode === 'POINTS' && (redemptionPoints == null || redemptionPoints <= 0)) {
+            throw new BadRequestException(REDEMPTION_UNAVAILABLE);
+          }
+
+          const created = await tx.appointment.create({
             data: {
               tenantId: actor.tenantId,
               clientId: clientNow.id,
@@ -229,10 +247,23 @@ export class AppointmentsService {
               servicePriceSnapshot: serviceNow.price,
               serviceDurationMinutesSnapshot: serviceNow.durationMinutes,
               pointsSnapshot: serviceNow.points,
+              bookingMode,
+              redemptionPointsSnapshot: bookingMode === 'POINTS' ? redemptionPoints : null,
               idempotencyKey: key,
             },
             include: appointmentInclude,
           });
+          if (bookingMode === 'POINTS' && redemptionPoints != null) {
+            await this.points.recordRedeem(tx, {
+              tenantId: actor.tenantId,
+              clientId: clientNow.id,
+              appointmentId: created.id,
+              points: redemptionPoints,
+              serviceName: serviceNow.name,
+              createdByUserId: actor.id,
+            });
+          }
+          return created;
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, timeout: 10_000 },
       );
@@ -348,11 +379,19 @@ export class AppointmentsService {
           if (!current) {
             throw new NotFoundException(NOT_FOUND);
           }
-          this.assertVisible(actor, current, action);
-          if (current.status !== AppointmentStatus.CONFIRMED) {
-            throw new ConflictException(TRANSITION);
-          }
-          const updated = await tx.appointment.update({
+        this.assertVisible(actor, current, action);
+        if (current.status !== AppointmentStatus.CONFIRMED) {
+          throw new ConflictException(TRANSITION);
+        }
+        if (action === 'cancel' && current.bookingMode === 'POINTS') {
+          await this.points.recordReversal(tx, {
+            tenantId: current.tenantId,
+            clientId: current.clientId,
+            appointmentId: current.id,
+            createdByUserId: actor.id,
+          });
+        }
+        const updated = await tx.appointment.update({
             where: { id: appointmentId },
             data:
               action === 'cancel'
@@ -527,7 +566,8 @@ export class AppointmentsService {
       row.serviceId === input.serviceId &&
       start.slice(0, 10) === input.date &&
       start.slice(11, 16) === input.time &&
-      (row.notes ?? null) === notes;
+      (row.notes ?? null) === notes &&
+      row.bookingMode === (input.bookingMode ?? 'NORMAL');
     if (!same) {
       throw new ConflictException(IDEMPOTENCY);
     }

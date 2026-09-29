@@ -130,6 +130,9 @@ describe('authentication and tenant isolation', () => {
   afterAll(async () => {
     await app?.close();
     await prisma.userSession.deleteMany({ where: { tenantId: { in: tenantIds } } });
+    await prisma.pointsTransaction.deleteMany({
+      where: { tenantId: { in: tenantIds }, reversalOfTransactionId: { not: null } },
+    });
     await prisma.pointsTransaction.deleteMany({ where: { tenantId: { in: tenantIds } } });
     await prisma.appointment.deleteMany({ where: { tenantId: { in: tenantIds } } });
     await prisma.professionalScheduleException.deleteMany({ where: { tenantId: { in: tenantIds } } });

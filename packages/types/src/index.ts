@@ -92,6 +92,7 @@ export interface ServiceItem {
   price: string;
   durationMinutes: number;
   points: number;
+  redemptionPoints: number | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -150,6 +151,8 @@ export interface Availability {
 
 export type AppointmentStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 
+export type BookingMode = 'NORMAL' | 'POINTS';
+
 export interface AppointmentItem {
   id: string;
   tenantId: string;
@@ -162,6 +165,8 @@ export interface AppointmentItem {
   price: string;
   durationMinutes: number;
   pointsSnapshot: number;
+  bookingMode: BookingMode;
+  redemptionPointsSnapshot: number | null;
   date: string;
   time: string;
   startAt: string;
@@ -179,7 +184,12 @@ export interface BookableProfessional {
   displayName: string;
 }
 
-export type PointsTransactionType = 'EARN' | 'REDEEM' | 'ADJUSTMENT_CREDIT' | 'ADJUSTMENT_DEBIT';
+export type PointsTransactionType =
+  | 'EARN'
+  | 'REDEEM'
+  | 'REDEEM_REVERSAL'
+  | 'ADJUSTMENT_CREDIT'
+  | 'ADJUSTMENT_DEBIT';
 
 export interface PointsBalance {
   balance: number;

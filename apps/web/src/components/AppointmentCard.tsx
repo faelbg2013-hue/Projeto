@@ -25,6 +25,9 @@ export function AppointmentCard({
       <p className="mt-1 text-sm text-muted">
         {item.durationMinutes} min · {money(item.price)}
       </p>
+      {item.bookingMode === 'POINTS' && item.redemptionPointsSnapshot != null ? (
+        <p className="mt-1 text-sm text-foreground">{item.redemptionPointsSnapshot} pontos utilizados</p>
+      ) : null}
       {item.notes ? <p className="mt-2 break-words text-sm text-muted">{item.notes}</p> : null}
       {actions ? <div className="mt-4 flex flex-wrap gap-3">{actions}</div> : null}
     </article>

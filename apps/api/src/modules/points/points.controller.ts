@@ -120,7 +120,7 @@ export class ClientPointsController {
     operationId: 'adjustClientPoints',
     summary: 'Credita ou debita pontos de um cliente',
     description:
-      'Somente ADMIN, somente ADJUSTMENT_CREDIT ou ADJUSTMENT_DEBIT. EARN e REDEEM são rejeitados. O motivo é obrigatório. createdByUserId vem da sessão. O débito trava a linha do cliente e recusa saldo insuficiente com 409.',
+      'Somente ADMIN, somente ADJUSTMENT_CREDIT ou ADJUSTMENT_DEBIT. EARN, REDEEM e REDEEM_REVERSAL são rejeitados. O motivo é obrigatório. createdByUserId vem da sessão. O débito trava a linha do cliente e recusa saldo insuficiente com 409.',
   })
   @ApiCreatedResponse({ type: PointsAdjustmentResultDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })

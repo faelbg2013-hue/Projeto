@@ -220,3 +220,90 @@ test('professional cannot open the points administration', async ({ page, reques
   await expect(page.getByText('Sessão')).toBeVisible();
   await expect(page.getByText('Pontos disponíveis')).toHaveCount(0);
 });
+
+test('client books with points, the professional sees the redemption, and cancellation returns the points', async ({
+  page,
+  request,
+}, testInfo) => {
+  const adminToken = await apiToken(request, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  const stamp = `${testInfo.project.name}-${Date.now()}`;
+  const serviceName = `Resgate ${stamp}`;
+  const displayName = `00 Resgate ${stamp}`;
+  const clientEmail = `e2e-resgate-${stamp}@example.com`;
+  const professionalEmail = `e2e-resgate-pro-${stamp}@example.com`;
+  const created = await request.post(`${apiOrigin}/api/v1/professionals`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+    data: {
+      name: 'Barbeiro Resgate',
+      email: professionalEmail,
+      password: 'senha-segura',
+      displayName,
+    },
+  });
+  expect(created.status()).toBe(201);
+  const professional = (await created.json()) as { id: string };
+  await openWeek(request, adminToken, professional.id);
+  const service = await request.post(`${apiOrigin}/api/v1/services`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+    data: { name: serviceName, price: 45, durationMinutes: 30, points: 10, redemptionPoints: 50 },
+  });
+  expect(service.status()).toBe(201);
+  const registered = await request.post(`${apiOrigin}/api/v1/auth/register`, {
+    data: { name: 'Cliente Resgate', email: clientEmail, password: 'senha-segura' },
+  });
+  expect(registered.status()).toBe(201);
+  const clientToken = ((await registered.json()) as { accessToken: string }).accessToken;
+  const profile = await request.get(`${apiOrigin}/api/v1/clients/me`, {
+    headers: { Authorization: `Bearer ${clientToken}` },
+  });
+  expect(profile.status()).toBe(200);
+  const client = (await profile.json()) as { id: string };
+  const credited = await request.post(`${apiOrigin}/api/v1/clients/${client.id}/points/adjustments`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+    data: { type: 'ADJUSTMENT_CREDIT', points: 80, reason: 'Saldo para resgate' },
+  });
+  expect(credited.status()).toBe(201);
+
+  await login(page, clientEmail, 'senha-segura');
+  const date = nextWeekday(2);
+  await page.goto('/agendar');
+  await page.getByRole('button', { name: displayName }).click();
+  await page.getByRole('button', { name: serviceName }).click();
+  await page.getByLabel('Data').fill(date);
+  await page.getByRole('button', { name: 'Ver horários' }).click();
+  await page.getByRole('list', { name: 'Horários disponíveis' }).getByRole('button', { name: '10:00' }).click();
+  await expect(page.getByText('Saldo atual').locator('..')).toContainText('80 pontos');
+  await page.getByRole('radio', { name: 'Usar 50 pontos' }).check();
+  await expect(page.getByText('50 pontos serão utilizados no momento do agendamento.')).toBeVisible();
+  await expect(page.locator('dt', { hasText: 'Saldo após' }).locator('..').locator('dd')).toHaveText('30 pontos');
+  await page.getByRole('button', { name: 'Confirmar agendamento' }).click();
+  await expect(page.getByText('Agendamento confirmado')).toBeVisible();
+  await expect(page.locator('dt', { hasText: 'Pontos utilizados' }).locator('..').locator('dd')).toHaveText('50');
+  await expect(page.locator('dt', { hasText: 'Novo saldo' }).locator('..').locator('dd')).toHaveText('30 pontos');
+  await expectNoHorizontalOverflow(page);
+
+  await page.goto('/conta');
+  await page.getByRole('button', { name: 'Sair' }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await login(page, professionalEmail, 'senha-segura');
+  await page.goto('/profissional/agendamentos');
+  const booked = page.getByRole('article').filter({ hasText: serviceName });
+  await expect(booked.getByText('50 pontos utilizados')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Ajustar pontos' })).toHaveCount(0);
+  await expectNoHorizontalOverflow(page);
+
+  await page.goto('/conta');
+  await page.getByRole('button', { name: 'Sair' }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await login(page, clientEmail, 'senha-segura');
+  await page.goto('/agendamentos');
+  const upcoming = page.getByRole('article').filter({ hasText: serviceName });
+  await expect(upcoming.getByText('50 pontos utilizados')).toBeVisible();
+  await upcoming.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(page.getByRole('article').filter({ hasText: serviceName }).getByText('Cancelado')).toBeVisible();
+  await page.goto('/pontos');
+  await expect(page.getByRole('article').filter({ hasText: 'Devolução' }).getByText('+50')).toBeVisible();
+  await expect(page.getByRole('article').filter({ hasText: 'Resgate' }).getByText('-50')).toBeVisible();
+  await expect(page.locator('p').filter({ hasText: 'Saldo atual' })).toContainText('80');
+  await expectNoHorizontalOverflow(page);
+});

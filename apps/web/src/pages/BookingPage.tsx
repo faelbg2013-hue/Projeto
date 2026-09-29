@@ -1,10 +1,11 @@
-import type { AppointmentItem, BookableProfessional, ServiceItem } from '@ravion/types';
+import type { AppointmentItem, BookableProfessional, BookingMode, ServiceItem } from '@ravion/types';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { SessionFrame } from '../components/SessionFrame';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { ApiClientError } from '../services/api';
 import { appointmentsService, civilDate, money } from '../services/appointments.service';
+import { pointsService } from '../services/points.service';
 import { professionalsService } from '../services/professionals.service';
 import { scheduleService } from '../services/schedule.service';
 import { servicesService } from '../services/services.service';
@@ -41,6 +42,9 @@ export function BookingPage() {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [time, setTime] = useState('');
   const [notes, setNotes] = useState('');
+  const [bookingMode, setBookingMode] = useState<BookingMode>('NORMAL');
+  const [balance, setBalance] = useState<number | null>(null);
+  const [balanceAfter, setBalanceAfter] = useState<number | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -69,6 +73,18 @@ export function BookingPage() {
           setLoading(false);
         }
       });
+    pointsService
+      .mine()
+      .then((points) => {
+        if (active) {
+          setBalance(points.balance);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setBalance(null);
+        }
+      });
     return () => {
       active = false;
     };
@@ -80,6 +96,7 @@ export function BookingPage() {
   function chooseProfessional(id: string): void {
     setProfessionalId(id);
     setServiceId('');
+    setBookingMode('NORMAL');
     setSlots(null);
     setTime('');
     setError(null);
@@ -87,6 +104,7 @@ export function BookingPage() {
 
   function chooseService(id: string): void {
     setServiceId(id);
+    setBookingMode('NORMAL');
     setSlots(null);
     setTime('');
     setError(null);
@@ -138,9 +156,15 @@ export function BookingPage() {
           date,
           time,
           notes: notes.trim() ? notes.trim() : null,
+          bookingMode,
         },
         key,
       );
+      if (created.bookingMode === 'POINTS') {
+        const next = await pointsService.mine();
+        setBalanceAfter(next.balance);
+        setBalance(next.balance);
+      }
       setConfirmed(created);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Não foi possível confirmar o agendamento.');
@@ -160,6 +184,12 @@ export function BookingPage() {
           <SummaryRow label="Horário" value={confirmed.time} />
           <SummaryRow label="Duração" value={`${confirmed.durationMinutes} min`} />
           <SummaryRow label="Valor" value={money(confirmed.price)} />
+          {confirmed.bookingMode === 'POINTS' && confirmed.redemptionPointsSnapshot != null ? (
+            <SummaryRow label="Pontos utilizados" value={String(confirmed.redemptionPointsSnapshot)} />
+          ) : null}
+          {confirmed.bookingMode === 'POINTS' && balanceAfter != null ? (
+            <SummaryRow label="Novo saldo" value={`${balanceAfter} pontos`} />
+          ) : null}
         </dl>
         <Link
           to="/agendamentos"
@@ -226,6 +256,7 @@ export function BookingPage() {
                       }`}
                     >
                       {item.name} · {item.durationMinutes} min · {money(item.price)}
+                      {item.redemptionPoints ? ` ou ${item.redemptionPoints} pontos` : ''}
                     </button>
                   ))}
                 </div>
@@ -307,7 +338,55 @@ export function BookingPage() {
                 <SummaryRow label="Horário" value={time} />
                 <SummaryRow label="Duração" value={`${service.durationMinutes} min`} />
                 <SummaryRow label="Valor" value={money(service.price)} />
+                {balance != null ? <SummaryRow label="Saldo atual" value={`${balance} pontos`} /> : null}
+                {service.redemptionPoints ? (
+                  <SummaryRow
+                    label="Opção"
+                    value={
+                      bookingMode === 'POINTS'
+                        ? `${service.redemptionPoints} pontos`
+                        : `Pagar normalmente — ${money(service.price)}`
+                    }
+                  />
+                ) : null}
+                {bookingMode === 'POINTS' && service.redemptionPoints && balance != null ? (
+                  <SummaryRow label="Saldo após" value={`${balance - service.redemptionPoints} pontos`} />
+                ) : null}
               </dl>
+              {service.redemptionPoints ? (
+                <fieldset className="flex min-w-0 flex-col gap-3">
+                  <legend className="text-[0.68rem] uppercase tracking-[0.28em] text-muted">Como utilizar</legend>
+                  <label className="flex min-w-0 items-start gap-3 text-sm text-foreground">
+                    <input
+                      type="radio"
+                      name="bookingMode"
+                      checked={bookingMode === 'NORMAL'}
+                      onChange={() => setBookingMode('NORMAL')}
+                    />
+                    <span className="break-words">Pagar normalmente — {money(service.price)}</span>
+                  </label>
+                  <label className="flex min-w-0 items-start gap-3 text-sm text-foreground">
+                    <input
+                      type="radio"
+                      name="bookingMode"
+                      checked={bookingMode === 'POINTS'}
+                      disabled={balance == null || balance < service.redemptionPoints}
+                      onChange={() => setBookingMode('POINTS')}
+                    />
+                    <span className="break-words">Usar {service.redemptionPoints} pontos</span>
+                  </label>
+                  {balance != null && balance < service.redemptionPoints ? (
+                    <p className="text-sm text-muted">
+                      Você possui {balance} pontos. São necessários {service.redemptionPoints} pontos.
+                    </p>
+                  ) : null}
+                  {bookingMode === 'POINTS' ? (
+                    <p className="text-sm text-foreground">
+                      {service.redemptionPoints} pontos serão utilizados no momento do agendamento.
+                    </p>
+                  ) : null}
+                </fieldset>
+              ) : null}
               <button
                 type="button"
                 onClick={() => void confirm()}

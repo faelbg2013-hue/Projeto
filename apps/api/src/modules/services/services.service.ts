@@ -19,6 +19,7 @@ function toService(service: Service): ServiceItem {
     price: service.price.toFixed(2),
     durationMinutes: service.durationMinutes,
     points: service.points,
+    redemptionPoints: service.redemptionPoints,
     isActive: service.isActive,
     createdAt: service.createdAt.toISOString(),
     updatedAt: service.updatedAt.toISOString(),
@@ -65,6 +66,7 @@ export class ServicesService {
         price: new Prisma.Decimal(input.price.toFixed(2)),
         durationMinutes: input.durationMinutes,
         points: input.points,
+        redemptionPoints: input.redemptionPoints ?? null,
         isActive: true,
       },
     });
@@ -81,6 +83,7 @@ export class ServicesService {
         ...(input.price !== undefined ? { price: new Prisma.Decimal(input.price.toFixed(2)) } : {}),
         ...(input.durationMinutes !== undefined ? { durationMinutes: input.durationMinutes } : {}),
         ...(input.points !== undefined ? { points: input.points } : {}),
+        ...(input.redemptionPoints !== undefined ? { redemptionPoints: input.redemptionPoints } : {}),
         ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
       },
     });

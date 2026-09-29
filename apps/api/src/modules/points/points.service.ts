@@ -26,7 +26,9 @@ const BUSY = 'Não foi possível concluir a movimentação de pontos.';
 const CREDIT_TYPES = new Set<PointsTransactionType>([
   PointsTransactionType.EARN,
   PointsTransactionType.ADJUSTMENT_CREDIT,
+  PointsTransactionType.REDEEM_REVERSAL,
 ]);
+const REVERSAL_MISSING = 'Não foi possível devolver os pontos do agendamento.';
 
 const transactionInclude = {
   appointment: { select: { serviceNameSnapshot: true } },
@@ -91,6 +93,80 @@ export class PointsService {
         reason,
         appointmentId: input.appointmentId,
         earnAppointmentId: input.appointmentId,
+        createdByUserId: input.createdByUserId,
+      },
+    });
+  }
+
+  async recordRedeem(
+    tx: Prisma.TransactionClient,
+    input: {
+      tenantId: string;
+      clientId: string;
+      appointmentId: string;
+      points: number;
+      serviceName: string;
+      createdByUserId: string;
+    },
+  ): Promise<void> {
+    if (!Number.isInteger(input.points) || input.points <= 0) {
+      throw new BadRequestException('Quantidade de pontos inválida.');
+    }
+    const summary = await this.totals(tx, input.tenantId, input.clientId);
+    if (summary.balance < input.points) {
+      throw new ConflictException(INSUFFICIENT);
+    }
+    const reason = `Resgate de pontos no agendamento do serviço ${input.serviceName}`.slice(0, 240);
+    await tx.pointsTransaction.create({
+      data: {
+        tenantId: input.tenantId,
+        clientId: input.clientId,
+        type: PointsTransactionType.REDEEM,
+        points: input.points,
+        reason,
+        appointmentId: input.appointmentId,
+        redeemAppointmentId: input.appointmentId,
+        createdByUserId: input.createdByUserId,
+      },
+    });
+  }
+
+  async recordReversal(
+    tx: Prisma.TransactionClient,
+    input: {
+      tenantId: string;
+      clientId: string;
+      appointmentId: string;
+      createdByUserId: string;
+    },
+  ): Promise<void> {
+    const redeem = await tx.pointsTransaction.findFirst({
+      where: {
+        tenantId: input.tenantId,
+        clientId: input.clientId,
+        appointmentId: input.appointmentId,
+        type: PointsTransactionType.REDEEM,
+      },
+    });
+    if (!redeem || redeem.redeemAppointmentId !== input.appointmentId) {
+      throw new ConflictException(REVERSAL_MISSING);
+    }
+    const existing = await tx.pointsTransaction.findFirst({
+      where: { reversalOfTransactionId: redeem.id },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new ConflictException(REVERSAL_MISSING);
+    }
+    await tx.pointsTransaction.create({
+      data: {
+        tenantId: input.tenantId,
+        clientId: input.clientId,
+        type: PointsTransactionType.REDEEM_REVERSAL,
+        points: redeem.points,
+        reason: 'Devolução de pontos por cancelamento do agendamento',
+        appointmentId: input.appointmentId,
+        reversalOfTransactionId: redeem.id,
         createdByUserId: input.createdByUserId,
       },
     });

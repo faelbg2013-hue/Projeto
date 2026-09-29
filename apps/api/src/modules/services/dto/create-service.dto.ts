@@ -53,10 +53,31 @@ export class CreateServiceDto {
   @Max(1440)
   durationMinutes!: number;
 
-  @ApiProperty({ type: Number, example: 10, minimum: 0, maximum: 100000 })
+  @ApiProperty({
+    type: Number,
+    example: 10,
+    minimum: 0,
+    maximum: 100000,
+    description: 'Pontos que o cliente ganha quando o atendimento é concluído.',
+  })
   @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(100000)
   points!: number;
+
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    example: 50,
+    minimum: 1,
+    maximum: 100000,
+    description: 'Pontos necessários para agendar no modo POINTS. Null significa que o resgate não está disponível.',
+  })
+  @Transform(({ value }: { value: unknown }) => (value === '' ? null : value))
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100000)
+  redemptionPoints?: number | null;
 }

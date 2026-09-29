@@ -7,7 +7,7 @@ import type {
 } from '@ravion/types';
 import { PaginationMetaDto } from '../../../common/dto/pagination-meta.response';
 
-const TYPES = ['EARN', 'REDEEM', 'ADJUSTMENT_CREDIT', 'ADJUSTMENT_DEBIT'] as const;
+const TYPES = ['EARN', 'REDEEM', 'REDEEM_REVERSAL', 'ADJUSTMENT_CREDIT', 'ADJUSTMENT_DEBIT'] as const;
 
 export class PointsBalanceDto implements PointsBalance {
   @ApiProperty({ type: Number, example: 120 })
