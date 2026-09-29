@@ -143,7 +143,7 @@ test('client sees the earned balance and statement and cannot open admin points'
   await expect(page.getByRole('heading', { name: 'Pontos' })).toBeVisible();
   await expect(page.locator('p').filter({ hasText: 'Saldo atual' })).toContainText('10');
   const earn = page.getByRole('article').filter({ hasText: `Atendimento concluído: ${serviceName}` });
-  await expect(earn.getByText('+10')).toBeVisible();
+  await expect(earn.getByText('+10', { exact: true })).toBeVisible();
   await expect(earn.getByRole('heading', { name: 'Atendimento' })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
@@ -179,7 +179,7 @@ test('admin credits and debits with a debit preview', async ({ page, request }, 
   await page.getByRole('button', { name: 'Confirmar' }).click();
   await expect(page.locator('p').filter({ hasText: 'Saldo atual' })).toContainText('20');
   const credit = page.getByRole('article').filter({ hasText: 'Bonificação' });
-  await expect(credit.getByText('+20')).toBeVisible();
+  await expect(credit.getByText('+20', { exact: true })).toBeVisible();
   await expect(credit.getByRole('heading', { name: 'Crédito' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Ajustar pontos' }).click();
@@ -193,7 +193,7 @@ test('admin credits and debits with a debit preview', async ({ page, request }, 
   await page.getByRole('button', { name: 'Confirmar' }).click();
   await expect(page.locator('p').filter({ hasText: 'Saldo atual' })).toContainText('15');
   const debit = page.getByRole('article').filter({ hasText: 'Correção' });
-  await expect(debit.getByText('-5')).toBeVisible();
+  await expect(debit.getByText('-5', { exact: true })).toBeVisible();
   await expect(debit.getByRole('heading', { name: 'Débito' })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
@@ -302,8 +302,8 @@ test('client books with points, the professional sees the redemption, and cancel
   await upcoming.getByRole('button', { name: 'Cancelar' }).click();
   await expect(page.getByRole('article').filter({ hasText: serviceName }).getByText('Cancelado')).toBeVisible();
   await page.goto('/pontos');
-  await expect(page.getByRole('article').filter({ hasText: 'Devolução' }).getByText('+50')).toBeVisible();
-  await expect(page.getByRole('article').filter({ hasText: 'Resgate' }).getByText('-50')).toBeVisible();
+  await expect(page.getByRole('article').filter({ hasText: 'Devolução' }).getByText('+50', { exact: true })).toBeVisible();
+  await expect(page.getByRole('article').filter({ hasText: 'Resgate' }).getByText('-50', { exact: true })).toBeVisible();
   await expect(page.locator('p').filter({ hasText: 'Saldo atual' })).toContainText('80');
   await expectNoHorizontalOverflow(page);
 });
