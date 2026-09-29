@@ -135,8 +135,7 @@ test('client sees the earned balance and statement and cannot open admin points'
   expect(completed.status(), await completed.text()).toBe(200);
 
   await login(page, clientEmail, 'senha-segura');
-  const card = page.locator('section').filter({ hasText: 'Pontos disponíveis' });
-  await expect(card).toBeVisible();
+  const card = page.getByText('Pontos disponíveis', { exact: true }).locator('..');
   await expect(card).toContainText('10');
   await expectNoHorizontalOverflow(page);
   await card.getByRole('link', { name: 'Ver extrato' }).click();

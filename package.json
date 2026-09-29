@@ -21,7 +21,7 @@
     "dev:web": "pnpm --filter @ravion/ui build && pnpm --filter @ravion/types build && pnpm --filter @ravion/web dev",
     "dev:api": "pnpm --filter @ravion/types build && pnpm --filter @ravion/validation build && pnpm prisma:generate && pnpm --filter @ravion/api dev",
     "build": "pnpm -r --if-present build",
-    "typecheck": "pnpm --filter @ravion/ui build && pnpm -r --if-present typecheck",
+    "typecheck": "pnpm --filter @ravion/ui build && pnpm --filter @ravion/types build && pnpm -r --if-present typecheck",
     "lint": "eslint .",
     "test": "pnpm -r --if-present test",
     "test:e2e": "pnpm --filter @ravion/web test:e2e",
