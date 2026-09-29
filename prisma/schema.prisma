@@ -20,8 +20,11 @@ model Tenant {
   isActive  Boolean       @default(true)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
-  users     User[]
-  sessions  UserSession[]
+  users         User[]
+  sessions      UserSession[]
+  clients       Client[]
+  professionals Professional[]
+  services      Service[]
 
   @@map("tenants")
 }
@@ -38,6 +41,8 @@ model User {
   updatedAt    DateTime      @updatedAt
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
   sessions     UserSession[]
+  client       Client?
+  professional Professional?
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -59,4 +64,52 @@ model UserSession {
   @@index([userId])
   @@index([tenantId])
   @@map("user_sessions")
+}
+
+model Client {
+  id        String   @id @default(uuid()) @db.Char(36)
+  tenantId  String   @db.Char(36)
+  userId    String   @unique @db.Char(36)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@map("clients")
+}
+
+model Professional {
+  id          String   @id @default(uuid()) @db.Char(36)
+  tenantId    String   @db.Char(36)
+  userId      String   @unique @db.Char(36)
+  displayName String   @db.VarChar(120)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@map("professionals")
+}
+
+model Service {
+  id              String   @id @default(uuid()) @db.Char(36)
+  tenantId        String   @db.Char(36)
+  name            String   @db.VarChar(120)
+  description     String?  @db.VarChar(1000)
+  price           Decimal  @db.Decimal(10, 2)
+  durationMinutes Int
+  points          Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("services")
 }

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Inject,
@@ -58,15 +59,28 @@ export class AuthService {
 
     const passwordHash = await this.passwords.hash(input.password);
     try {
-      const user = await this.prisma.user.create({
-        data: {
-          tenantId: tenant.id,
-          name: input.name,
-          email: input.email,
-          passwordHash,
-          role: 'CLIENT',
-          isActive: true,
-        },
+      const user = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            tenantId: tenant.id,
+            name: input.name,
+            email: input.email,
+            passwordHash,
+            role: 'CLIENT',
+            isActive: true,
+          },
+        });
+        if (created.role !== 'CLIENT') {
+          throw new BadRequestException('O usuário não possui o papel exigido.');
+        }
+        await tx.client.create({
+          data: {
+            tenantId: created.tenantId,
+            userId: created.id,
+            isActive: true,
+          },
+        });
+        return created;
       });
       return this.openSession(user);
     } catch (error) {

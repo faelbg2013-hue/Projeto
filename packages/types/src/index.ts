@@ -55,6 +55,48 @@ export interface AuthUser {
   isActive: boolean;
 }
 
+export interface OperationalUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+}
+
+export interface ClientProfile {
+  id: string;
+  tenantId: string;
+  userId: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user: OperationalUser;
+}
+
+export interface ProfessionalProfile {
+  id: string;
+  tenantId: string;
+  userId: string;
+  displayName: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user: OperationalUser;
+}
+
+export interface ServiceItem {
+  id: string;
+  tenantId: string;
+  name: string;
+  description: string | null;
+  price: string;
+  durationMinutes: number;
+  points: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export function isUserRole(value: unknown): value is UserRole {
   return typeof value === 'string' && userRoles.some((role) => role === value);
 }

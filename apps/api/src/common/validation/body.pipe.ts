@@ -8,3 +8,12 @@ export function bodyPipe(expectedType: Type): ValidationPipe {
     transform: true,
   });
 }
+
+export function queryPipe(expectedType: Type): ValidationPipe {
+  return new ValidationPipe({
+    expectedType,
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  });
+}

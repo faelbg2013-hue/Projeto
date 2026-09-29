@@ -53,6 +53,18 @@ export class ApiClient {
     return this.request<TResponse>(path, { method: 'POST', body, headers });
   }
 
+  patch<TResponse>(
+    path: string,
+    body?: unknown,
+    headers?: Record<string, string>,
+  ): Promise<TResponse> {
+    return this.request<TResponse>(path, { method: 'PATCH', body, headers });
+  }
+
+  delete<TResponse>(path: string, headers?: Record<string, string>): Promise<TResponse> {
+    return this.request<TResponse>(path, { method: 'DELETE', headers });
+  }
+
   private async request<TResponse>(path: string, init: ApiRequest): Promise<TResponse> {
     const response = await this.fetchFn(`${this.baseUrl}${path}`, {
       method: init.method ?? 'GET',

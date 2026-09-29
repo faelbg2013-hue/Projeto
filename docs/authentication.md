@@ -26,7 +26,9 @@ O frontend não escolhe o tenant do usuário autenticado.
 | Login                  | header `X-Tenant-Slug`                                             |
 | Requisição autenticada | claim `tenantId` do access token, conferida com o usuário no banco |
 
-`POST /api/v1/auth/register` ignora qualquer tentativa de enviar `role` ou `tenantId`. O papel criado é sempre `CLIENT`. Campos extras são rejeitados pelo `ValidationPipe`.
+`POST /api/v1/auth/register` ignora qualquer tentativa de enviar `role` ou `tenantId`. O papel criado é sempre `CLIENT`. Campos extras são rejeitados pelo `ValidationPipe`. O cadastro cria o `User` e o perfil `Client` na mesma transação. Se o perfil não for gravado, o usuário também não permanece. O cadastro público não cria `Professional`.
+
+As regras de acesso de cliente, profissional e serviço estão em [domain.md](domain.md).
 
 `POST /api/v1/auth/login` procura o e-mail apenas no tenant do slug informado. O mesmo e-mail pode existir em outro tenant. Credencial errada, usuário inativo, tenant desconhecido ou tenant inativo respondem todos com:
 

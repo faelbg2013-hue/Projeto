@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useAuth } from '../auth/auth-context';
 import { BrandMark } from '../components/BrandMark';
+import { ServiceCatalog } from '../components/ServiceCatalog';
+import { useActiveServices } from '../hooks/useActiveServices';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const roleLabels: Record<UserRole, string> = {
@@ -11,9 +13,20 @@ const roleLabels: Record<UserRole, string> = {
   ADMIN: 'Administrador',
 };
 
+const accountLinks: Record<UserRole, ReadonlyArray<{ to: string; label: string }>> = {
+  CLIENT: [],
+  PROFESSIONAL: [{ to: '/profissional', label: 'Área profissional' }],
+  ADMIN: [
+    { to: '/admin/services', label: 'Serviços' },
+    { to: '/admin/professionals', label: 'Profissionais' },
+    { to: '/admin/clients', label: 'Clientes' },
+  ],
+};
+
 export function AccountPage() {
   const { user, logout } = useAuth();
   const [pending, setPending] = useState(false);
+  const catalog = useActiveServices();
   useDocumentTitle(user ? `${user.name} — Ravion Barber` : 'Conta — Ravion Barber');
 
   if (!user) {
@@ -53,6 +66,20 @@ export function AccountPage() {
           <AccountRow label="E-mail" value={user.email} />
           <AccountRow label="Perfil" value={roleLabels[user.role]} />
         </dl>
+        {accountLinks[user.role].length > 0 ? (
+          <nav className="mt-8 flex flex-wrap gap-x-5 gap-y-3 text-[0.68rem] uppercase tracking-[0.28em]">
+            {accountLinks[user.role].map((link) => (
+              <Link key={link.to} to={link.to} className="text-accent">
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        ) : null}
+        <ServiceCatalog
+          services={catalog.services}
+          loading={catalog.loading}
+          error={catalog.error}
+        />
         {import.meta.env.DEV ? <DevTenant user={user} /> : null}
       </section>
     </div>
@@ -63,7 +90,7 @@ function AccountRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="border-t border-line pt-4">
       <dt className="text-[0.68rem] uppercase tracking-[0.28em] text-muted">{label}</dt>
-      <dd className="mt-2 text-base text-foreground">{value}</dd>
+      <dd className="mt-2 break-all text-base text-foreground">{value}</dd>
     </div>
   );
 }

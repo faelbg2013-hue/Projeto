@@ -133,6 +133,44 @@ describe('authentication screens', () => {
     expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
   });
 
+  it('sends a client away from administration and the professional area', async () => {
+    renderAt(
+      '/admin/clients',
+      createService({
+        me: vi.fn(async () => ana),
+      }),
+    );
+
+    expect(await screen.findByText('Sessão')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Clientes' })).not.toBeInTheDocument();
+  });
+
+  it('sends a client away from the professional area', async () => {
+    renderAt(
+      '/profissional',
+      createService({
+        me: vi.fn(async () => ana),
+      }),
+    );
+
+    expect(await screen.findByText('Sessão')).toBeInTheDocument();
+    expect(screen.queryByText('Status')).not.toBeInTheDocument();
+  });
+
+  it('asks for a service name before creating one', async () => {
+    const admin: AuthUser = { ...ana, role: 'ADMIN', name: 'Administrador' };
+    renderAt(
+      '/admin/services',
+      createService({
+        me: vi.fn(async () => admin),
+      }),
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Serviços' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Criar serviço' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Informe o nome do serviço.');
+  });
+
   it('logs out and returns to the login screen', async () => {
     renderAt(
       '/conta',

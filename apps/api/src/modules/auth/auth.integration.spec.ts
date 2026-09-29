@@ -130,6 +130,9 @@ describe('authentication and tenant isolation', () => {
   afterAll(async () => {
     await app?.close();
     await prisma.userSession.deleteMany({ where: { tenantId: { in: tenantIds } } });
+    await prisma.professional.deleteMany({ where: { tenantId: { in: tenantIds } } });
+    await prisma.client.deleteMany({ where: { tenantId: { in: tenantIds } } });
+    await prisma.service.deleteMany({ where: { tenantId: { in: tenantIds } } });
     await prisma.user.deleteMany({ where: { tenantId: { in: tenantIds } } });
     await prisma.tenant.deleteMany({ where: { id: { in: tenantIds } } });
     await prisma.$disconnect();
@@ -151,6 +154,10 @@ describe('authentication and tenant isolation', () => {
     });
     expect(response.body.passwordHash).toBeUndefined();
     expect(JSON.stringify(response.body)).not.toContain('passwordHash');
+    const profile = await prisma.client.findUnique({
+      where: { userId: response.body.user.id as string },
+    });
+    expect(profile).toMatchObject({ tenantId: tenantA.id, isActive: true });
     const cookies = response.headers['set-cookie'];
     const cookieHeader = Array.isArray(cookies) ? cookies.join(';') : String(cookies ?? '');
     expect(cookieHeader).toContain('ravion_access');

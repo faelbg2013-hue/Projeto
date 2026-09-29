@@ -69,10 +69,157 @@ async function main(): Promise<void> {
       });
     }
 
+    await ensureOperationalUser(prisma, passwords, {
+      tenantId: tenant.id,
+      name: readEnv('SEED_CLIENT_NAME'),
+      email: readEnv('SEED_CLIENT_EMAIL').toLowerCase(),
+      password: readEnv('SEED_CLIENT_PASSWORD'),
+      role: 'CLIENT',
+    });
+    await ensureOperationalUser(prisma, passwords, {
+      tenantId: tenant.id,
+      name: readEnv('SEED_PROFESSIONAL_NAME'),
+      email: readEnv('SEED_PROFESSIONAL_EMAIL').toLowerCase(),
+      password: readEnv('SEED_PROFESSIONAL_PASSWORD'),
+      role: 'PROFESSIONAL',
+      displayName: readEnv('SEED_PROFESSIONAL_DISPLAY_NAME'),
+    });
+    await backfillClientProfiles(prisma, tenant.id);
+    await ensureServices(prisma, tenant.id);
+
     console.log(`Tenant pronto: ${tenant.slug}`);
     console.log('Administrador pronto');
+    console.log('Cliente de teste pronto');
+    console.log('Profissional de teste pronto');
+    console.log('Serviços de desenvolvimento prontos');
   } finally {
     await prisma.$disconnect();
+  }
+}
+
+async function ensureOperationalUser(
+  prisma: PrismaClient,
+  passwords: PasswordService,
+  input: {
+    tenantId: string;
+    name: string;
+    email: string;
+    password: string;
+    role: 'CLIENT' | 'PROFESSIONAL';
+    displayName?: string;
+  },
+): Promise<void> {
+  const existing = await prisma.user.findUnique({
+    where: { tenantId_email: { tenantId: input.tenantId, email: input.email } },
+  });
+
+  const user =
+    existing ??
+    (await prisma.user.create({
+      data: {
+        tenantId: input.tenantId,
+        name: input.name,
+        email: input.email,
+        passwordHash: await hashSeedPassword(passwords, input.password, input.role),
+        role: input.role,
+        isActive: true,
+      },
+    }));
+
+  if (user.role !== input.role) {
+    throw new Error(
+      'O e-mail de desenvolvimento já existe com outro papel. O seed não altera o papel.',
+    );
+  }
+
+  if (input.role === 'CLIENT') {
+    const profile = await prisma.client.findUnique({ where: { userId: user.id } });
+    if (!profile) {
+      await prisma.client.create({
+        data: { tenantId: input.tenantId, userId: user.id, isActive: true },
+      });
+    }
+    return;
+  }
+
+  const profile = await prisma.professional.findUnique({ where: { userId: user.id } });
+  if (!profile) {
+    await prisma.professional.create({
+      data: {
+        tenantId: input.tenantId,
+        userId: user.id,
+        displayName: input.displayName || user.name,
+        isActive: true,
+      },
+    });
+  }
+}
+
+async function hashSeedPassword(
+  passwords: PasswordService,
+  password: string,
+  role: 'CLIENT' | 'PROFESSIONAL',
+): Promise<string> {
+  if (password.length < 12) {
+    const variable = role === 'CLIENT' ? 'SEED_CLIENT_PASSWORD' : 'SEED_PROFESSIONAL_PASSWORD';
+    throw new Error(`${variable} precisa ter pelo menos 12 caracteres.`);
+  }
+  return passwords.hash(password);
+}
+
+async function backfillClientProfiles(prisma: PrismaClient, tenantId: string): Promise<void> {
+  const users = await prisma.user.findMany({
+    where: { tenantId, role: 'CLIENT', client: { is: null } },
+  });
+  for (const user of users) {
+    await prisma.client.create({
+      data: { tenantId, userId: user.id, isActive: true },
+    });
+  }
+}
+
+async function ensureServices(prisma: PrismaClient, tenantId: string): Promise<void> {
+  const catalog = [
+    {
+      name: 'Corte',
+      description: 'Corte masculino',
+      price: '45.00',
+      durationMinutes: 30,
+      points: 10,
+    },
+    {
+      name: 'Barba',
+      description: 'Barba completa',
+      price: '30.00',
+      durationMinutes: 20,
+      points: 5,
+    },
+    {
+      name: 'Corte + Barba',
+      description: null,
+      price: '70.00',
+      durationMinutes: 50,
+      points: 15,
+    },
+  ];
+
+  for (const item of catalog) {
+    const existing = await prisma.service.findFirst({
+      where: { tenantId, name: item.name },
+    });
+    if (!existing) {
+      await prisma.service.create({
+        data: {
+          tenantId,
+          name: item.name,
+          description: item.description,
+          price: item.price,
+          durationMinutes: item.durationMinutes,
+          points: item.points,
+          isActive: true,
+        },
+      });
+    }
   }
 }
 

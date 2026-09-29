@@ -17,9 +17,11 @@ Convenções:
 - O access token é um JWT no cabeçalho Authorization (esquema bearer) ou no cookie HttpOnly ravion_access. Health e o cadastro/login/refresh/logout são públicos.
 - O login exige o header X-Tenant-Slug. Esse slug escolhe o contexto lógico da aplicação. Não é uma barbearia e não substitui o papel do usuário.
 - Depois da autenticação, o tenant vem do token e do usuário no banco. Um tenantId no corpo não autoriza acesso a outro contexto.
-- Papéis: CLIENT, PROFESSIONAL e ADMIN. O cadastro público cria somente CLIENT.
-- Listagens futuras aceitam os query params page e pageSize. Filtros adicionais são query params específicos de cada recurso.
-- O envelope de paginação é PaginationMetaDto.`;
+- Papéis: CLIENT, PROFESSIONAL e ADMIN. O cadastro público cria User e Client na mesma transação. Professional só nasce por um ADMIN.
+- Cliente, profissional e serviço pertencem ao tenant da sessão. tenantId enviado pelo cliente não autoriza outro contexto.
+- Serviço guarda preço decimal, duração em minutos e pontuação configurável. Agenda, fidelidade e financeiro não fazem parte deste contrato.
+- Listagens aceitam page e pageSize. O filtro isActive é específico de clientes, profissionais e serviços.
+- O envelope de paginação é { data, meta }, com meta em PaginationMetaDto. A ordenação padrão desses recursos é createdAt descendente.`;
 
 export const swaggerModels = [ApiErrorResponseDto, PaginationQueryDto, PaginationMetaDto];
 
@@ -42,6 +44,9 @@ export function buildSwaggerConfig(port: number): Omit<OpenAPIObject, 'paths'> {
     .addTag('health', 'Disponibilidade da API')
     .addTag('auth', 'Cadastro, sessão e usuário autenticado')
     .addTag('users', 'Usuários do tenant autenticado')
+    .addTag('clients', 'Perfil operacional de clientes')
+    .addTag('professionals', 'Perfil operacional de profissionais')
+    .addTag('services', 'Catálogo de serviços')
     .build();
 }
 
