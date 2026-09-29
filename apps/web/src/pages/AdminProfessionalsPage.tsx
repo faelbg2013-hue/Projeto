@@ -137,7 +137,7 @@ export function AdminProfessionalsPage() {
       <form className="flex flex-col gap-5" onSubmit={(event) => void onSubmit(event)} noValidate>
         {editingId ? null : (
           <>
-            <Field label="Nome" value={name} onChange={setName} autoComplete="name" />
+            <Field label="Nome completo" value={name} onChange={setName} autoComplete="name" />
             <Field
               label="E-mail"
               value={email}

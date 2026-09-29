@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 
 const apiOrigin = 'http://127.0.0.1:43111';
@@ -9,7 +9,7 @@ function envValue(name: string): string {
   if (fromProcess) {
     return fromProcess;
   }
-  const text = readFileSync(resolve(__dirname, '../../.env'), 'utf8');
+  const text = readFileSync(fileURLToPath(new URL('../../../.env', import.meta.url)), 'utf8');
   for (const line of text.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) {
@@ -114,7 +114,7 @@ test('admin creates, edits and deactivates a professional', async ({ page }, tes
   await page.goto('/admin/professionals');
   await expect(page.getByRole('heading', { name: 'Profissionais' })).toBeVisible();
 
-  await page.getByLabel('Nome').fill('Carlos Lima');
+  await page.getByLabel('Nome completo').fill('Carlos Lima');
   await page.getByLabel('E-mail').fill(email);
   await page.getByLabel('Senha').fill('senha-segura');
   await page.getByLabel('Nome de exibição').fill(displayName);
