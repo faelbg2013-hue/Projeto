@@ -1,0 +1,89 @@
+import { DocumentBuilder, type OpenAPIObject } from '@nestjs/swagger';
+import { ApiErrorResponseDto } from '../common/dto/api-error.response';
+import { PaginationMetaDto } from '../common/dto/pagination-meta.response';
+import { PaginationQueryDto } from '../common/dto/pagination.query';
+
+export const API_DESCRIPTION = `API HTTP da plataforma Ravion Barber.
+
+Clientes:
+- PWA web em React, Vite e TypeScript.
+- Aplicativo mobile futuro em Flutter, utilizando Dart, consumindo esta mesma API.
+
+Não existe backend separado por cliente. As regras de negócio permanecem nesta API e o contrato compartilhado é HTTP/OpenAPI, adequado para manter clientes TypeScript e Dart/Flutter.
+
+Convenções:
+- Rotas versionadas em /api/v1.
+- Erros seguem ApiErrorResponseDto: statusCode, message e error. A resposta não inclui stack trace.
+- Autenticação futura usa o cabeçalho Authorization com o esquema bearer (JWT). Health é público.
+- Listagens futuras aceitam os query params page e pageSize. Filtros adicionais são query params específicos de cada recurso.
+- O envelope de paginação é PaginationMetaDto.`;
+
+export const swaggerModels = [ApiErrorResponseDto, PaginationQueryDto, PaginationMetaDto];
+
+export function buildSwaggerConfig(port: number): Omit<OpenAPIObject, 'paths'> {
+  return new DocumentBuilder()
+    .setTitle('Ravion Barber API')
+    .setDescription(API_DESCRIPTION)
+    .setVersion('1.0.0')
+    .addServer(`http://127.0.0.1:${port}`)
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description:
+          'Access token JWT enviado em Authorization. O mesmo esquema vale para o PWA e para o futuro aplicativo Flutter.',
+      },
+      'bearer',
+    )
+    .addTag('health', 'Disponibilidade da API')
+    .build();
+}
+
+function errorContent(description: string): {
+  description: string;
+  content: { 'application/json': { schema: { $ref: string } } };
+} {
+  return {
+    description,
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/ApiErrorResponseDto' },
+      },
+    },
+  };
+}
+
+export function applyOpenApiConventions(document: OpenAPIObject): OpenAPIObject {
+  document.components ??= {};
+  document.components.parameters = {
+    ...document.components.parameters,
+    Page: {
+      name: 'page',
+      in: 'query',
+      description: 'Página da listagem, começando em 1.',
+      required: false,
+      schema: { type: 'integer', minimum: 1, default: 1 },
+    },
+    PageSize: {
+      name: 'pageSize',
+      in: 'query',
+      description:
+        'Quantidade de itens por página. Filtros de negócio entram como query params próprios de cada recurso.',
+      required: false,
+      schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+    },
+  };
+
+  document.components.responses = {
+    ...document.components.responses,
+    BadRequest: errorContent('Requisição inválida.'),
+    Unauthorized: errorContent('Autenticação ausente ou inválida.'),
+    Forbidden: errorContent('Cliente autenticado sem permissão para a operação.'),
+    NotFound: errorContent('Recurso não encontrado.'),
+    TooManyRequests: errorContent('Limite de requisições excedido.'),
+    InternalServerError: errorContent('Falha inesperada. A resposta não inclui stack trace.'),
+  };
+
+  return document;
+}

@@ -1,0 +1,15 @@
+/*
+ * Ravion Barber design tokens.
+ * Change the accent, surfaces, or type here. Components consume Tailwind
+ * utilities that read these variables and must not hardcode palette values.
+ */
+:root {
+  --ravion-color-background: #0c0c0d;
+  --ravion-color-foreground: #f4f1ea;
+  --ravion-color-muted: #a39e96;
+  --ravion-color-line: #2c2c30;
+  --ravion-color-surface: #161618;
+  --ravion-color-accent: #c4a36a;
+  --ravion-font-sans: 'Outfit', 'Segoe UI', sans-serif;
+  --ravion-font-display: 'Cormorant Garamond', Georgia, serif;
+}

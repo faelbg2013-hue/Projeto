@@ -1,0 +1,29 @@
+@import 'tailwindcss';
+@import '@ravion/ui/tokens.css';
+
+@theme inline {
+  --color-background: var(--ravion-color-background);
+  --color-foreground: var(--ravion-color-foreground);
+  --color-muted: var(--ravion-color-muted);
+  --color-line: var(--ravion-color-line);
+  --color-surface: var(--ravion-color-surface);
+  --color-accent: var(--ravion-color-accent);
+  --font-sans: var(--ravion-font-sans);
+  --font-display: var(--ravion-font-display);
+}
+
+html {
+  background: var(--ravion-color-background);
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--ravion-color-background);
+  color: var(--ravion-color-foreground);
+  font-family: var(--ravion-font-sans);
+}
+
+#root {
+  min-height: 100dvh;
+}
