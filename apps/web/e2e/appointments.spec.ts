@@ -127,7 +127,7 @@ test('client books, sees the summary and cancels into history', async ({ page, r
   await page.getByRole('button', { name: displayName }).click();
   await page.getByRole('button', { name: serviceName }).click();
   await page.getByLabel('Data').fill(date);
-  await page.getByRole('button', { name: 'Ver horários' }).click();
+  await expect(page.getByRole('list', { name: 'Horários disponíveis' })).toBeVisible();
   await page.getByRole('list', { name: 'Horários disponíveis' }).getByRole('button', { name: '15:00' }).click();
   await page.getByLabel('Observação').fill('Janela');
   await expect(page.locator('dt', { hasText: 'Profissional' }).locator('..').locator('dd')).toHaveText(
@@ -217,7 +217,7 @@ test('client sees the occupied slot error when the time is taken before confirm'
   await page.getByRole('button', { name: displayName }).click();
   await page.getByRole('button', { name: serviceName }).click();
   await page.getByLabel('Data').fill(date);
-  await page.getByRole('button', { name: 'Ver horários' }).click();
+  await expect(page.getByRole('list', { name: 'Horários disponíveis' })).toBeVisible();
   await page.getByRole('list', { name: 'Horários disponíveis' }).getByRole('button', { name: '11:00' }).click();
   await expect(page.getByRole('button', { name: 'Confirmar agendamento' })).toBeVisible();
 

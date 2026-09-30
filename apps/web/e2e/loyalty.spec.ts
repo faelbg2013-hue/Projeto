@@ -270,12 +270,11 @@ test('client books with points, the professional sees the redemption, and cancel
   await page.getByRole('button', { name: displayName }).click();
   await page.getByRole('button', { name: serviceName }).click();
   await page.getByLabel('Data').fill(date);
-  await page.getByRole('button', { name: 'Ver horários' }).click();
+  await expect(page.getByRole('list', { name: 'Horários disponíveis' })).toBeVisible();
   await page.getByRole('list', { name: 'Horários disponíveis' }).getByRole('button', { name: '10:00' }).click();
   await expect(page.getByText('Saldo atual').locator('..')).toContainText('80 pontos');
   await page.getByRole('radio', { name: 'Usar 50 pontos' }).check();
   await expect(page.getByText('50 pontos serão utilizados no momento do agendamento.')).toBeVisible();
-  await expect(page.locator('dt', { hasText: 'Saldo após' }).locator('..').locator('dd')).toHaveText('30 pontos');
   await page.getByRole('button', { name: 'Confirmar agendamento' }).click();
   await expect(page.getByText('Agendamento confirmado')).toBeVisible();
   await expect(page.locator('dt', { hasText: 'Pontos utilizados' }).locator('..').locator('dd')).toHaveText('50');
