@@ -140,11 +140,11 @@ test('client sees the earned balance and statement and cannot open admin points'
   await expectNoHorizontalOverflow(page);
   await card.getByRole('link', { name: 'Ver extrato' }).click();
   await expect(page).toHaveURL(/\/pontos$/);
-  await expect(page.getByRole('heading', { name: 'Pontos' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Pontos', exact: true })).toBeVisible();
   await expect(page.locator('p').filter({ hasText: 'Saldo atual' })).toContainText('10');
   const earn = page.getByRole('article').filter({ hasText: `Atendimento concluído: ${serviceName}` });
   await expect(earn.getByText('+10', { exact: true })).toBeVisible();
-  await expect(earn.getByRole('heading', { name: 'Atendimento' })).toBeVisible();
+  await expect(earn.getByRole('heading', { name: 'Pontos ganhos' })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
   await page.goto(`/admin/clients/${client.id}/points`);
@@ -301,8 +301,8 @@ test('client books with points, the professional sees the redemption, and cancel
   await upcoming.getByRole('button', { name: 'Cancelar' }).click();
   await expect(page.getByRole('article').filter({ hasText: serviceName }).getByText('Cancelado')).toBeVisible();
   await page.goto('/pontos');
-  await expect(page.getByRole('article').filter({ hasText: 'Devolução' }).getByText('+50', { exact: true })).toBeVisible();
-  await expect(page.getByRole('article').filter({ hasText: 'Resgate' }).getByText('-50', { exact: true })).toBeVisible();
+  await expect(page.getByRole('article').filter({ hasText: 'Pontos devolvidos' }).getByText('+50', { exact: true })).toBeVisible();
+  await expect(page.getByRole('article').filter({ hasText: 'Pontos utilizados' }).getByText('-50', { exact: true })).toBeVisible();
   await expect(page.locator('p').filter({ hasText: 'Saldo atual' })).toContainText('80');
   await expectNoHorizontalOverflow(page);
 });
