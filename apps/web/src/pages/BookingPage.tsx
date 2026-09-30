@@ -11,6 +11,7 @@ import { scheduleService } from '../services/schedule.service';
 import { servicesService } from '../services/services.service';
 
 const links = [
+  { to: '/cliente', label: 'Início' },
   { to: '/agendar', label: 'Agendar' },
   { to: '/agendamentos', label: 'Meus agendamentos' },
   { to: '/conta', label: 'Conta' },

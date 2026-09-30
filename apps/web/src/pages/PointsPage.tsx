@@ -5,6 +5,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { pointsDate, pointsService, pointsTypeLabel, signedPoints } from '../services/points.service';
 
 const links = [
+  { to: '/cliente', label: 'Início' },
   { to: '/agendar', label: 'Agendar' },
   { to: '/agendamentos', label: 'Meus agendamentos' },
   { to: '/pontos', label: 'Meus pontos' },

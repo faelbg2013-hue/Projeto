@@ -12,6 +12,7 @@ import { AdminClientsPage } from '../pages/AdminClientsPage';
 import { AdminProfessionalsPage } from '../pages/AdminProfessionalsPage';
 import { AdminServicesPage } from '../pages/AdminServicesPage';
 import { BookingPage } from '../pages/BookingPage';
+import { ClientDashboardPage } from '../pages/ClientDashboardPage';
 import { HomePage } from '../pages/HomePage';
 import { LoginPage } from '../pages/LoginPage';
 import { MyAppointmentsPage } from '../pages/MyAppointmentsPage';
@@ -36,6 +37,7 @@ export const appRoutes: RouteObject[] = [
           {
             element: <RequireRole roles={['CLIENT']} />,
             children: [
+              { path: 'cliente', element: <ClientDashboardPage /> },
               { path: 'agendar', element: <BookingPage /> },
               { path: 'agendamentos', element: <MyAppointmentsPage /> },
               { path: 'pontos', element: <PointsPage /> },

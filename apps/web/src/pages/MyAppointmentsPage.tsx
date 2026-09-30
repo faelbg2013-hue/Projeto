@@ -6,6 +6,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { appointmentsService } from '../services/appointments.service';
 
 const links = [
+  { to: '/cliente', label: 'Início' },
   { to: '/agendar', label: 'Agendar' },
   { to: '/agendamentos', label: 'Meus agendamentos' },
   { to: '/conta', label: 'Conta' },
