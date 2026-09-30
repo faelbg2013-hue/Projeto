@@ -4,6 +4,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '../auth/auth-context';
 import { appointmentsService } from '../services/appointments.service';
+import { clientsService } from '../services/clients.service';
 import type { AuthService } from '../services/auth.service';
 import { pointsService } from '../services/points.service';
 import { professionalsService } from '../services/professionals.service';
@@ -57,6 +58,21 @@ describe('client navigation', () => {
     vi.spyOn(pointsService, 'mineTransactions').mockResolvedValue(emptyPage());
     vi.spyOn(servicesService, 'list').mockResolvedValue(emptyPage());
     vi.spyOn(professionalsService, 'bookable').mockResolvedValue(emptyPage());
+    vi.spyOn(clientsService, 'me').mockResolvedValue({
+      id: 'client-1',
+      tenantId: 'tenant-web',
+      userId: 'user-1',
+      isActive: true,
+      createdAt: '2026-09-01T12:00:00.000Z',
+      updatedAt: '2026-09-01T12:00:00.000Z',
+      user: {
+        id: 'user-1',
+        name: 'Ana Costa',
+        email: 'ana@example.com',
+        role: 'CLIENT',
+        isActive: true,
+      },
+    });
   });
 
   afterEach(() => {
