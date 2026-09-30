@@ -5,9 +5,11 @@ import { appointmentStatusLabel, civilDate, money } from '../services/appointmen
 export function AppointmentCard({
   item,
   actions,
+  showBookingMode = false,
 }: {
   item: AppointmentItem;
   actions?: ReactNode;
+  showBookingMode?: boolean;
 }) {
   return (
     <article className="min-w-0 border border-line bg-surface p-4">
@@ -25,6 +27,9 @@ export function AppointmentCard({
       <p className="mt-1 text-sm text-muted">
         {item.durationMinutes} min · {money(item.price)}
       </p>
+      {showBookingMode ? (
+        <p className="mt-1 text-sm text-foreground">{item.bookingMode === 'POINTS' ? 'Pontos' : 'Normal'}</p>
+      ) : null}
       {item.bookingMode === 'POINTS' && item.redemptionPointsSnapshot != null ? (
         <p className="mt-1 text-sm text-foreground">{item.redemptionPointsSnapshot} pontos utilizados</p>
       ) : null}
