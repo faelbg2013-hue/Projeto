@@ -170,7 +170,9 @@ describe('ClientDashboardPage', () => {
     expect(screen.getAllByRole('link', { name: 'Meus pontos' }).some((link) => link.getAttribute('href') === '/pontos')).toBe(
       true,
     );
-    expect(screen.getByRole('link', { name: 'Minha conta' })).toHaveAttribute('href', '/conta');
+    expect(
+      screen.getAllByRole('link', { name: 'Minha conta' }).every((link) => link.getAttribute('href') === '/conta'),
+    ).toBe(true);
   });
 
   it('keeps the other sections when appointments fail', async () => {

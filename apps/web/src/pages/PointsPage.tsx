@@ -1,16 +1,9 @@
 import type { PointsTransactionItem } from '@ravion/types';
 import { useEffect, useState } from 'react';
+import { ClientNavigation } from '../components/ClientNavigation';
 import { SessionFrame } from '../components/SessionFrame';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { pointsDate, pointsService, pointsTypeLabel, signedPoints } from '../services/points.service';
-
-const links = [
-  { to: '/cliente', label: 'Início' },
-  { to: '/agendar', label: 'Agendar' },
-  { to: '/agendamentos', label: 'Meus agendamentos' },
-  { to: '/pontos', label: 'Meus pontos' },
-  { to: '/conta', label: 'Conta' },
-] as const;
 
 export function PointsPage() {
   useDocumentTitle('Pontos — Ravion Barber');
@@ -45,7 +38,7 @@ export function PointsPage() {
   }, []);
 
   return (
-    <SessionFrame eyebrow="Cliente" title="Pontos" links={links}>
+    <SessionFrame eyebrow="Cliente" title="Pontos" navigation={<ClientNavigation />}>
       {loading ? <p className="text-sm text-muted">Carregando pontos</p> : null}
       {error ? (
         <p role="alert" className="text-sm text-foreground">

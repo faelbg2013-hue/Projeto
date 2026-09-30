@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useAuth } from '../auth/auth-context';
 import { BrandMark } from '../components/BrandMark';
+import { ClientNavigation } from '../components/ClientNavigation';
 import { PointsCard } from '../components/PointsCard';
 import { ServiceCatalog } from '../components/ServiceCatalog';
 import { useActiveServices } from '../hooks/useActiveServices';
@@ -14,13 +15,10 @@ const roleLabels: Record<UserRole, string> = {
   ADMIN: 'Administrador',
 };
 
-const accountLinks: Record<UserRole, ReadonlyArray<{ to: string; label: string }>> = {
-  CLIENT: [
-    { to: '/cliente', label: 'Início' },
-    { to: '/agendar', label: 'Agendar' },
-    { to: '/agendamentos', label: 'Meus agendamentos' },
-    { to: '/pontos', label: 'Meus pontos' },
-  ],
+const accountLinks: Record<
+  Exclude<UserRole, 'CLIENT'>,
+  ReadonlyArray<{ to: string; label: string }>
+> = {
   PROFESSIONAL: [
     { to: '/profissional', label: 'Área profissional' },
     { to: '/profissional/agenda', label: 'Agenda' },
@@ -70,6 +68,7 @@ export function AccountPage() {
           Sair
         </button>
       </header>
+      {user.role === 'CLIENT' ? <ClientNavigation /> : null}
       <section className="flex flex-1 flex-col justify-end py-16 md:justify-center">
         <p className="text-[0.72rem] uppercase tracking-[0.38em] text-accent">Sessão</p>
         <h1 className="mt-5 font-display text-5xl font-medium tracking-tight text-foreground sm:text-6xl md:text-7xl">
@@ -79,7 +78,7 @@ export function AccountPage() {
           <AccountRow label="E-mail" value={user.email} />
           <AccountRow label="Perfil" value={roleLabels[user.role]} />
         </dl>
-        {accountLinks[user.role].length > 0 ? (
+        {user.role !== 'CLIENT' ? (
           <nav className="mt-8 flex flex-wrap gap-x-5 gap-y-3 text-[0.68rem] uppercase tracking-[0.28em]">
             {accountLinks[user.role].map((link) => (
               <Link key={link.to} to={link.to} className="text-accent">

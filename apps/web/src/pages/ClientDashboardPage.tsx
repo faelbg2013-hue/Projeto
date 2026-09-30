@@ -3,19 +3,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { useAuth } from '../auth/auth-context';
 import { AppointmentCard } from '../components/AppointmentCard';
+import { ClientNavigation } from '../components/ClientNavigation';
 import { SessionFrame } from '../components/SessionFrame';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { appointmentsService, money } from '../services/appointments.service';
 import { pointsService } from '../services/points.service';
 import { servicesService } from '../services/services.service';
-
-const links = [
-  { to: '/cliente', label: 'Início' },
-  { to: '/agendar', label: 'Agendar' },
-  { to: '/agendamentos', label: 'Meus agendamentos' },
-  { to: '/pontos', label: 'Meus pontos' },
-  { to: '/conta', label: 'Conta' },
-] as const;
 
 const quickActions = [
   { to: '/agendar', label: 'Agendar' },
@@ -108,7 +101,7 @@ export function ClientDashboardPage() {
   }
 
   return (
-    <SessionFrame eyebrow="Cliente" title={`Olá, ${user.name}`} links={links}>
+    <SessionFrame eyebrow="Cliente" title={`Olá, ${user.name}`} navigation={<ClientNavigation />}>
       <section>
         <h2 className="text-[0.68rem] uppercase tracking-[0.28em] text-muted">Próximo agendamento</h2>
         {appointmentsLoading ? <p className="mt-4 text-sm text-muted">Carregando agendamentos</p> : null}

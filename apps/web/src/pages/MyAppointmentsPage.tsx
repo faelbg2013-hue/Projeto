@@ -1,16 +1,10 @@
 import type { AppointmentItem } from '@ravion/types';
 import { useEffect, useState } from 'react';
 import { AppointmentCard } from '../components/AppointmentCard';
+import { ClientNavigation } from '../components/ClientNavigation';
 import { SessionFrame } from '../components/SessionFrame';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { appointmentsService } from '../services/appointments.service';
-
-const links = [
-  { to: '/cliente', label: 'Início' },
-  { to: '/agendar', label: 'Agendar' },
-  { to: '/agendamentos', label: 'Meus agendamentos' },
-  { to: '/conta', label: 'Conta' },
-] as const;
 
 export function MyAppointmentsPage() {
   useDocumentTitle('Meus agendamentos — Ravion Barber');
@@ -55,7 +49,7 @@ export function MyAppointmentsPage() {
   }
 
   return (
-    <SessionFrame eyebrow="Cliente" title="Agendamentos" links={links}>
+    <SessionFrame eyebrow="Cliente" title="Agendamentos" navigation={<ClientNavigation />}>
       {loading ? <p className="text-sm text-muted">Carregando agendamentos</p> : null}
       {error ? (
         <p role="alert" className="mb-6 text-sm text-foreground">

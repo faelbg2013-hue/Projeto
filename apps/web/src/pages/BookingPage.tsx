@@ -1,6 +1,7 @@
 import type { AppointmentItem, BookableProfessional, BookingMode, ServiceItem } from '@ravion/types';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
+import { ClientNavigation } from '../components/ClientNavigation';
 import { SessionFrame } from '../components/SessionFrame';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { ApiClientError } from '../services/api';
@@ -9,13 +10,6 @@ import { pointsService } from '../services/points.service';
 import { professionalsService } from '../services/professionals.service';
 import { scheduleService } from '../services/schedule.service';
 import { servicesService } from '../services/services.service';
-
-const links = [
-  { to: '/cliente', label: 'Início' },
-  { to: '/agendar', label: 'Agendar' },
-  { to: '/agendamentos', label: 'Meus agendamentos' },
-  { to: '/conta', label: 'Conta' },
-] as const;
 
 function todayInSaoPaulo(): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -176,7 +170,7 @@ export function BookingPage() {
 
   if (confirmed && professional && service) {
     return (
-      <SessionFrame eyebrow="Cliente" title="Agendamento" links={links}>
+      <SessionFrame eyebrow="Cliente" title="Agendamento" navigation={<ClientNavigation />}>
         <p className="text-sm uppercase tracking-[0.28em] text-accent">Agendamento confirmado</p>
         <dl className="mt-8 max-w-md space-y-4 text-sm">
           <SummaryRow label="Serviço" value={confirmed.serviceName} />
@@ -203,7 +197,7 @@ export function BookingPage() {
   }
 
   return (
-    <SessionFrame eyebrow="Cliente" title="Agendar" links={links}>
+    <SessionFrame eyebrow="Cliente" title="Agendar" navigation={<ClientNavigation />}>
       {loading ? <p className="text-sm text-muted">Carregando</p> : null}
       {loadError ? (
         <p role="alert" className="text-sm text-foreground">

@@ -7,11 +7,13 @@ export function SessionFrame({
   eyebrow,
   title,
   links,
+  navigation,
   children,
 }: {
   eyebrow: string;
   title: string;
-  links: ReadonlyArray<{ to: string; label: string }>;
+  links?: ReadonlyArray<{ to: string; label: string }>;
+  navigation?: ReactNode;
   children: ReactNode;
 }) {
   const { logout } = useAuth();
@@ -41,13 +43,15 @@ export function SessionFrame({
           Sair
         </button>
       </header>
-      <nav className="mt-8 flex flex-wrap gap-x-5 gap-y-3 text-[0.68rem] uppercase tracking-[0.28em]">
-        {links.map((link) => (
-          <Link key={link.to} to={link.to} className="text-muted">
-            {link.label}
-          </Link>
-        ))}
-      </nav>
+      {navigation ?? (
+        <nav className="mt-8 flex flex-wrap gap-x-5 gap-y-3 text-[0.68rem] uppercase tracking-[0.28em]">
+          {(links ?? []).map((link) => (
+            <Link key={link.to} to={link.to} className="text-muted">
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+      )}
       <main className="min-w-0 py-10">
         <p className="text-[0.72rem] uppercase tracking-[0.38em] text-accent">{eyebrow}</p>
         <h1 className="mt-4 break-words font-display text-5xl font-medium tracking-tight text-foreground sm:text-6xl">
