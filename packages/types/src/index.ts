@@ -286,6 +286,17 @@ export interface ProfessionalDayAppointment {
   pointsSnapshot: number;
 }
 
+/** Chaves de preferência publicadas pela API. F11.1 ainda não inclui chaves de negócio. */
+export type TenantSettingValues = Record<string, never>;
+
+export interface TenantSettingsResponse {
+  settings: TenantSettingValues;
+}
+
+export interface UpdateTenantSettings {
+  settings?: TenantSettingValues;
+}
+
 export interface ProfessionalDay {
   date: string;
   summary: ProfessionalDaySummary;

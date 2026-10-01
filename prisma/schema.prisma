@@ -56,6 +56,7 @@ model Tenant {
   scheduleExceptions   ProfessionalScheduleException[]
   appointments         Appointment[]
   pointsTransactions   PointsTransaction[]
+  settings             TenantSetting[]
 
   @@map("tenants")
 }
@@ -268,4 +269,19 @@ model PointsTransaction {
   @@index([tenantId, clientId, createdAt])
   @@index([appointmentId])
   @@map("points_transactions")
+}
+
+/// Preferência não sensível do tenant. Segredos não usam esta tabela. Novas chaves não exigem migration.
+model TenantSetting {
+  id        String   @id @default(uuid()) @db.Char(36)
+  tenantId  String   @db.Char(36)
+  key       String   @db.VarChar(64)
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, key])
+  @@index([tenantId])
+  @@map("tenant_settings")
 }
