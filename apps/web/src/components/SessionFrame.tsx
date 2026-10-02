@@ -9,12 +9,14 @@ export function SessionFrame({
   links,
   navigation,
   children,
+  shellClassName = 'mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-5 py-8 sm:px-8 md:px-12',
 }: {
   eyebrow: string;
   title: string;
   links?: ReadonlyArray<{ to: string; label: string }>;
   navigation?: ReactNode;
   children: ReactNode;
+  shellClassName?: string;
 }) {
   const { logout } = useAuth();
   const [pending, setPending] = useState(false);
@@ -29,7 +31,7 @@ export function SessionFrame({
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-5 py-8 sm:px-8 md:px-12">
+    <div className={shellClassName}>
       <header className="flex items-center justify-between gap-4">
         <Link to="/conta" aria-label="Ravion Barber">
           <BrandMark />
@@ -77,5 +79,6 @@ export const adminLinks = [
   { to: '/admin/professionals', label: 'Profissionais' },
   { to: '/admin/clients', label: 'Clientes' },
   { to: '/admin/appointments', label: 'Agendamentos' },
+  { to: '/admin/settings', label: 'Configurações' },
   { to: '/conta', label: 'Conta' },
 ] as const;

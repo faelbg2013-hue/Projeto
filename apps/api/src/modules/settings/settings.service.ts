@@ -1,12 +1,11 @@
-import { Inject, Injectable } from '@nestjs/common';
-import type { AuthUser, TenantSettingValues, TenantSettingsResponse } from '@ravion/types';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import type { AuthUser, BusinessHours, TenantSettingValues, TenantSettingsResponse } from '@ravion/types';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
-import { TENANT_SETTING_KEYS, type TenantSettingKey } from './settings.constants';
+import { businessHoursError, toStoredBusinessHours } from './business-hours';
 import type { UpdateSettingsDto } from './dto/update-settings.dto';
+import { type TenantSettingKey } from './settings.constants';
 
-function isSettingKey(key: string): key is TenantSettingKey {
-  return (TENANT_SETTING_KEYS as readonly string[]).includes(key);
-}
+const BUSINESS_HOURS_KEY = 'business_hours' satisfies TenantSettingKey;
 
 @Injectable()
 export class SettingsService {
@@ -17,40 +16,42 @@ export class SettingsService {
   }
 
   async update(actor: AuthUser, body: UpdateSettingsDto): Promise<TenantSettingsResponse> {
-    const entries = Object.entries(body.settings ?? {}).filter((entry): entry is [TenantSettingKey, string] =>
-      isSettingKey(entry[0]),
-    );
-
-    if (entries.length > 0) {
-      await this.prisma.$transaction(
-        entries.map(([key, value]) =>
-          this.prisma.tenantSetting.upsert({
-            where: { tenantId_key: { tenantId: actor.tenantId, key } },
-            create: { tenantId: actor.tenantId, key, value },
-            update: { value },
-          }),
-        ),
-      );
+    const hours = body.settings?.business_hours;
+    if (hours) {
+      const stored = JSON.stringify(toStoredBusinessHours(hours));
+      await this.prisma.tenantSetting.upsert({
+        where: { tenantId_key: { tenantId: actor.tenantId, key: BUSINESS_HOURS_KEY } },
+        create: { tenantId: actor.tenantId, key: BUSINESS_HOURS_KEY, value: stored },
+        update: { value: stored },
+      });
     }
 
     return { settings: await this.read(actor.tenantId) };
   }
 
   private async read(tenantId: string): Promise<TenantSettingValues> {
-    const keys: readonly string[] = TENANT_SETTING_KEYS;
-    if (keys.length === 0) {
+    const row = await this.prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId, key: BUSINESS_HOURS_KEY } },
+    });
+    if (!row) {
       return {};
     }
 
-    const rows = await this.prisma.tenantSetting.findMany({
-      where: { tenantId, key: { in: [...keys] } },
-    });
-    const settings: Record<string, string> = {};
-    for (const row of rows) {
-      if (isSettingKey(row.key)) {
-        settings[row.key] = row.value;
-      }
-    }
-    return settings as TenantSettingValues;
+    return { business_hours: decodeBusinessHours(row.value) };
   }
+}
+
+function decodeBusinessHours(raw: string): BusinessHours {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new BadRequestException('Horário de funcionamento armazenado é inválido.');
+  }
+
+  if (businessHoursError(parsed)) {
+    throw new BadRequestException('Horário de funcionamento armazenado é inválido.');
+  }
+
+  return parsed as BusinessHours;
 }

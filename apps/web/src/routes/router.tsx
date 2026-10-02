@@ -11,6 +11,7 @@ import { ProfessionalAgendaPage } from '../pages/ProfessionalAgendaPage';
 import { AdminClientsPage } from '../pages/AdminClientsPage';
 import { AdminProfessionalsPage } from '../pages/AdminProfessionalsPage';
 import { AdminServicesPage } from '../pages/AdminServicesPage';
+import { AdminSettingsPage } from '../pages/AdminSettingsPage';
 import { BookingPage } from '../pages/BookingPage';
 import { ClientDashboardPage } from '../pages/ClientDashboardPage';
 import { HomePage } from '../pages/HomePage';
@@ -64,6 +65,7 @@ export const appRoutes: RouteObject[] = [
                 element: <AgendaPage scope="admin" />,
               },
               { path: 'admin/clients', element: <AdminClientsPage /> },
+              { path: 'admin/settings', element: <AdminSettingsPage /> },
               { path: 'admin/clients/:clientId/points', element: <AdminClientPointsPage /> },
             ],
           },

@@ -29,7 +29,7 @@ export class SettingsController {
     operationId: 'getSettings',
     summary: 'Lê as preferências do tenant autenticado',
     description:
-      'Somente ADMIN. O tenant sai da sessão. A resposta contém apenas as chaves do contrato atual. F11.1 ainda não publica chaves de negócio.',
+      'Somente ADMIN. O tenant sai da sessão. A resposta contém business_hours somente quando o estabelecimento já salvou o horário. A ausência da chave não grava o padrão.',
   })
   @ApiOkResponse({ type: SettingsResponseDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
@@ -43,7 +43,7 @@ export class SettingsController {
     operationId: 'updateSettings',
     summary: 'Atualiza as preferências permitidas do tenant autenticado',
     description:
-      'Somente ADMIN. tenantId no corpo é rejeitado. Chaves fora do contrato são rejeitadas. Campos omitidos não são apagados.',
+      'Somente ADMIN. Aceita business_hours completo e validado. tenantId e chaves fora do contrato são rejeitados. Campos omitidos não são apagados.',
   })
   @ApiBody({ type: UpdateSettingsDto })
   @ApiOkResponse({ type: SettingsResponseDto })

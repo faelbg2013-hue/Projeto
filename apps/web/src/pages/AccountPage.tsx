@@ -32,6 +32,7 @@ const accountLinks: Record<
     { to: '/admin/professionals', label: 'Profissionais' },
     { to: '/admin/clients', label: 'Clientes' },
     { to: '/admin/appointments', label: 'Agendamentos' },
+    { to: '/admin/settings', label: 'Configurações' },
   ],
 };
 

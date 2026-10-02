@@ -189,7 +189,124 @@ describe('tenant settings', () => {
     expect(clientWrite.status).toBe(403);
     expect(anonymous.status).toBe(401);
   });
+
+  it('saves business hours for the authenticated tenant and reads them back', async () => {
+    const hours = week({ sunday: closedDay() });
+    const saved = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { business_hours: hours } });
+
+    expect(saved.status).toBe(200);
+    expect(saved.body).toEqual({ settings: { business_hours: hours } });
+
+    const read = await request(app.getHttpServer())
+      .get('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`);
+    expect(read.status).toBe(200);
+    expect(read.body).toEqual({ settings: { business_hours: hours } });
+
+    const stored = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantA.id, key: 'business_hours' } },
+    });
+    expect(stored?.tenantId).toBe(tenantA.id);
+    expect(JSON.parse(stored?.value ?? 'null')).toEqual(hours);
+  });
+
+  it('keeps business hours inside the authenticated tenant', async () => {
+    const hoursB = week({ saturday: { enabled: true, open: '07:15', close: '11:45' } });
+    const savedB = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminBToken}`)
+      .send({ settings: { business_hours: hoursB } });
+    expect(savedB.status).toBe(200);
+
+    const readA = await request(app.getHttpServer())
+      .get('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`);
+    const readB = await request(app.getHttpServer())
+      .get('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminBToken}`);
+    expect(readA.body.settings.business_hours.saturday.close).toBe('12:00');
+    expect(readA.body.settings.business_hours.sunday).toEqual(closedDay());
+    expect(readB.body.settings.business_hours.saturday.close).toBe('11:45');
+    expect(readB.body.settings.business_hours.sunday.open).toBe('09:00');
+    expect(JSON.stringify(readA.body)).not.toContain('11:45');
+    expect(JSON.stringify(readB.body)).not.toContain('12:00');
+
+    const attack = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ tenantId: tenantB.id, settings: { business_hours: hoursB } });
+    expect(attack.status).toBe(400);
+    const storedB = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantB.id, key: 'business_hours' } },
+    });
+    expect(JSON.parse(storedB?.value ?? 'null')).toEqual(hoursB);
+  });
+
+  it('rejects an unknown day, an invalid time, a reversed interval, an open day without time and a partial week', async () => {
+    const before = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantA.id, key: 'business_hours' } },
+    });
+
+    const unknownDay = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { business_hours: { ...week(), holiday: closedDay() } } });
+    const invalidTime = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { business_hours: week({ monday: { enabled: true, open: '25:00', close: '18:00' } }) } });
+    const reversed = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { business_hours: week({ monday: { enabled: true, open: '18:00', close: '08:00' } }) } });
+    const equal = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { business_hours: week({ monday: { enabled: true, open: '10:00', close: '10:00' } }) } });
+    const openWithoutTime = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { business_hours: week({ monday: { enabled: true, open: null, close: null } }) } });
+    const { sunday: _sunday, ...partial } = week();
+    const incomplete = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { business_hours: partial } });
+
+    expect(unknownDay.status).toBe(400);
+    expect(invalidTime.status).toBe(400);
+    expect(reversed.status).toBe(400);
+    expect(equal.status).toBe(400);
+    expect(openWithoutTime.status).toBe(400);
+    expect(incomplete.status).toBe(400);
+
+    const after = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantA.id, key: 'business_hours' } },
+    });
+    expect(after?.value).toBe(before?.value);
+  });
 });
+
+function closedDay() {
+  return { enabled: false, open: null, close: null };
+}
+
+function week(overrides: Record<string, { enabled: boolean; open: string | null; close: string | null }> = {}) {
+  const open = { enabled: true, open: '08:00', close: '18:00' };
+  return {
+    monday: { ...open },
+    tuesday: { ...open },
+    wednesday: { ...open },
+    thursday: { ...open },
+    friday: { ...open },
+    saturday: { enabled: true, open: '08:00', close: '12:00' },
+    sunday: { enabled: true, open: '09:00', close: '13:00' },
+    ...overrides,
+  };
+}
 
 async function login(app: INestApplication, slug: string, email: string): Promise<string> {
   const response = await request(app.getHttpServer())

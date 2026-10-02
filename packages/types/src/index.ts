@@ -286,8 +286,27 @@ export interface ProfessionalDayAppointment {
   pointsSnapshot: number;
 }
 
-/** Chaves de preferência publicadas pela API. F11.1 ainda não inclui chaves de negócio. */
-export type TenantSettingValues = Record<string, never>;
+export interface BusinessHoursDay {
+  enabled: boolean;
+  open: string | null;
+  close: string | null;
+}
+
+/** Horário do estabelecimento. Não altera a disponibilidade dos profissionais nesta etapa. */
+export interface BusinessHours {
+  monday: BusinessHoursDay;
+  tuesday: BusinessHoursDay;
+  wednesday: BusinessHoursDay;
+  thursday: BusinessHoursDay;
+  friday: BusinessHoursDay;
+  saturday: BusinessHoursDay;
+  sunday: BusinessHoursDay;
+}
+
+/** Chaves de preferência publicadas pela API. */
+export interface TenantSettingValues {
+  business_hours?: BusinessHours;
+}
 
 export interface TenantSettingsResponse {
   settings: TenantSettingValues;

@@ -3,6 +3,6 @@ import type { TenantSettingValues, TenantSettingsResponse } from '@ravion/types'
 import { TenantSettingValuesDto } from './update-settings.dto';
 
 export class SettingsResponseDto implements TenantSettingsResponse {
-  @ApiProperty({ type: TenantSettingValuesDto })
+  @ApiProperty({ type: () => TenantSettingValuesDto })
   settings!: TenantSettingValues;
 }
