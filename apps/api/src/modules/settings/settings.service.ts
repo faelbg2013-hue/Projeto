@@ -4,6 +4,8 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   APPOINTMENT_BUFFER_KEY,
   APPOINTMENT_BUFFER_MAX_MINUTES,
+  BOOKING_MAX_ADVANCE_DAYS,
+  BOOKING_MAX_ADVANCE_KEY,
   BOOKING_MIN_ADVANCE_KEY,
   CANCELLATION_MIN_ADVANCE_KEY,
   parseStoredAdvanceMinutes,
@@ -17,6 +19,7 @@ const BUSINESS_HOURS_KEY = 'business_hours' satisfies TenantSettingKey;
 const BOOKING_KEY = BOOKING_MIN_ADVANCE_KEY satisfies TenantSettingKey;
 const CANCELLATION_KEY = CANCELLATION_MIN_ADVANCE_KEY satisfies TenantSettingKey;
 const BUFFER_KEY = APPOINTMENT_BUFFER_KEY satisfies TenantSettingKey;
+const MAX_ADVANCE_KEY = BOOKING_MAX_ADVANCE_KEY satisfies TenantSettingKey;
 
 @Injectable()
 export class SettingsService {
@@ -41,6 +44,9 @@ export class SettingsService {
     if (body.settings?.appointment_buffer_minutes !== undefined) {
       await this.upsert(actor.tenantId, BUFFER_KEY, String(body.settings.appointment_buffer_minutes));
     }
+    if (body.settings?.booking_max_advance_days !== undefined) {
+      await this.upsert(actor.tenantId, MAX_ADVANCE_KEY, String(body.settings.booking_max_advance_days));
+    }
 
     return { settings: await this.read(actor.tenantId) };
   }
@@ -55,13 +61,17 @@ export class SettingsService {
 
   private async read(tenantId: string): Promise<TenantSettingValues> {
     const rows = await this.prisma.tenantSetting.findMany({
-      where: { tenantId, key: { in: [BUSINESS_HOURS_KEY, BOOKING_KEY, CANCELLATION_KEY, BUFFER_KEY] } },
+      where: {
+        tenantId,
+        key: { in: [BUSINESS_HOURS_KEY, BOOKING_KEY, CANCELLATION_KEY, BUFFER_KEY, MAX_ADVANCE_KEY] },
+      },
     });
     const byKey = new Map(rows.map((row) => [row.key, row.value]));
     const settings: TenantSettingValues = {
       booking_min_advance_minutes: decodeAdvance(byKey.get(BOOKING_KEY)),
       cancellation_min_advance_minutes: decodeAdvance(byKey.get(CANCELLATION_KEY)),
       appointment_buffer_minutes: decodeBuffer(byKey.get(BUFFER_KEY)),
+      booking_max_advance_days: decodeMaxAdvanceDays(byKey.get(MAX_ADVANCE_KEY)),
     };
     const hours = byKey.get(BUSINESS_HOURS_KEY);
     if (hours) {
@@ -80,6 +90,17 @@ function decodeBuffer(raw: string | undefined): number {
     throw new BadRequestException('Intervalo entre atendimentos armazenado é inválido.');
   }
   return minutes;
+}
+
+function decodeMaxAdvanceDays(raw: string | undefined): number {
+  if (raw === undefined) {
+    return 0;
+  }
+  const days = parseStoredMinutes(raw, BOOKING_MAX_ADVANCE_DAYS);
+  if (days === null) {
+    throw new BadRequestException('Antecedência máxima de agendamento armazenada é inválida.');
+  }
+  return days;
 }
 
 function decodeAdvance(raw: string | undefined): number {

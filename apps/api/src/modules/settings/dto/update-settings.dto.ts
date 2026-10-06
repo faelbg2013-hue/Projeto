@@ -16,7 +16,11 @@ import {
   ValidatorConstraint,
   type ValidatorConstraintInterface,
 } from 'class-validator';
-import { ADVANCE_MAX_MINUTES, APPOINTMENT_BUFFER_MAX_MINUTES } from '../advance-policy';
+import {
+  ADVANCE_MAX_MINUTES,
+  APPOINTMENT_BUFFER_MAX_MINUTES,
+  BOOKING_MAX_ADVANCE_DAYS,
+} from '../advance-policy';
 import { businessDayError } from '../business-hours';
 
 const WALL_TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -107,6 +111,9 @@ const ADVANCE_MAX = 'A antecedência máxima é de 43200 minutos.';
 const BUFFER_INTEGER = 'O intervalo precisa ser um número inteiro de minutos.';
 const BUFFER_NEGATIVE = 'O intervalo não pode ser negativo.';
 const BUFFER_MAX = 'O intervalo máximo é de 240 minutos.';
+const HORIZON_INTEGER = 'A antecedência máxima precisa ser um número inteiro de dias.';
+const HORIZON_NEGATIVE = 'A antecedência máxima não pode ser negativa.';
+const HORIZON_MAX = 'A antecedência máxima é de 365 dias.';
 
 /** Objeto fechado. Propriedades desconhecidas são rejeitadas pelo pipe. */
 export class TenantSettingValuesDto {
@@ -157,6 +164,20 @@ export class TenantSettingValuesDto {
   @Min(0, { message: BUFFER_NEGATIVE })
   @Max(APPOINTMENT_BUFFER_MAX_MINUTES, { message: BUFFER_MAX })
   appointment_buffer_minutes?: number;
+
+  @ApiPropertyOptional({
+    type: Number,
+    minimum: 0,
+    maximum: BOOKING_MAX_ADVANCE_DAYS,
+    example: 0,
+    description:
+      'Dias de calendário em America/Sao_Paulo até os quais um agendamento pode começar. A data de hoje mais esse número é permitida. O dia seguinte não é. 0 não limita a data. Não altera duração, preço nem pontos. A leitura devolve 0 quando a linha ainda não existe.',
+  })
+  @ValidateIf((_, value: unknown) => value !== undefined)
+  @IsInt({ message: HORIZON_INTEGER })
+  @Min(0, { message: HORIZON_NEGATIVE })
+  @Max(BOOKING_MAX_ADVANCE_DAYS, { message: HORIZON_MAX })
+  booking_max_advance_days?: number;
 }
 
 export class UpdateSettingsDto {

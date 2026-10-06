@@ -25,7 +25,13 @@ import {
 } from '../../common/time/schedule-clock';
 import { ScheduleNow } from '../../common/time/schedule-now';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
-import { BOOKING_MIN_ADVANCE_KEY, readAdvanceMinutes, readAppointmentBufferMinutes } from '../settings/advance-policy';
+import {
+  BOOKING_MIN_ADVANCE_KEY,
+  isBookingDateOpen,
+  readAdvanceMinutes,
+  readAppointmentBufferMinutes,
+  readBookingMaxAdvanceDays,
+} from '../settings/advance-policy';
 import { businessHoursDayKey, businessHoursError } from '../settings/business-hours';
 import type { TenantSettingKey } from '../settings/settings.constants';
 import {
@@ -361,6 +367,10 @@ export class ScheduleService {
     db: ScheduleReader,
     input: { tenantId: string; professionalId: string; date: string; durationMinutes: number },
   ): Promise<string[]> {
+    const maxDays = await readBookingMaxAdvanceDays(db, input.tenantId);
+    if (!isBookingDateOpen(input.date, this.clock.now(), maxDays)) {
+      return [];
+    }
     const bounds = dayBounds(input.date);
     const bufferMinutes = await readAppointmentBufferMinutes(db, input.tenantId);
     const bufferMs = bufferMinutes * 60_000;

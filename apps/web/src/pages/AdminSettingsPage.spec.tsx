@@ -220,8 +220,11 @@ describe('AdminSettingsPage', () => {
         booking_min_advance_minutes: 120,
         cancellation_min_advance_minutes: 60,
         appointment_buffer_minutes: 0,
+        booking_max_advance_days: 0,
       },
     });
+    expect(screen.getByLabelText('Antecedência máxima para agendamento')).toHaveValue('0');
+    expect(screen.getByText(/Quantidade máxima de dias no futuro/)).toBeInTheDocument();
     expect(screen.getByLabelText('Intervalo entre atendimentos')).toHaveValue('0');
     expect(screen.getByText(/Tempo reservado após cada atendimento/)).toBeInTheDocument();
     expect(await screen.findByText('Políticas de antecedência salvas.')).toBeInTheDocument();

@@ -7,6 +7,7 @@ export const TENANT_SETTING_KEYS = [
   'booking_min_advance_minutes',
   'cancellation_min_advance_minutes',
   'appointment_buffer_minutes',
+  'booking_max_advance_days',
 ] as const;
 
 export type TenantSettingKey = (typeof TENANT_SETTING_KEYS)[number];

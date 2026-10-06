@@ -24,6 +24,7 @@ export function AdminSettingsPage() {
   const [bookingAdvance, setBookingAdvance] = useState('0');
   const [cancellationAdvance, setCancellationAdvance] = useState('0');
   const [bufferMinutes, setBufferMinutes] = useState('0');
+  const [maxAdvanceDays, setMaxAdvanceDays] = useState('0');
   const [policyError, setPolicyError] = useState<string | null>(null);
   const [policyMessage, setPolicyMessage] = useState<string | null>(null);
   const [policyPending, setPolicyPending] = useState(false);
@@ -38,6 +39,7 @@ export function AdminSettingsPage() {
           setBookingAdvance(String(response.settings.booking_min_advance_minutes ?? 0));
           setCancellationAdvance(String(response.settings.cancellation_min_advance_minutes ?? 0));
           setBufferMinutes(String(response.settings.appointment_buffer_minutes ?? 0));
+          setMaxAdvanceDays(String(response.settings.booking_max_advance_days ?? 0));
         }
       })
       .catch((caught: unknown) => {
@@ -98,6 +100,7 @@ export function AdminSettingsPage() {
     const booking = boundedMinutes(bookingAdvance, ADVANCE_MAX_MINUTES);
     const cancellation = boundedMinutes(cancellationAdvance, ADVANCE_MAX_MINUTES);
     const buffer = boundedMinutes(bufferMinutes, BUFFER_MAX_MINUTES);
+    const horizon = boundedMinutes(maxAdvanceDays, HORIZON_MAX_DAYS);
     if (booking === null || cancellation === null) {
       setPolicyError('Informe minutos inteiros entre 0 e 43200.');
       setPolicyMessage(null);
@@ -105,6 +108,11 @@ export function AdminSettingsPage() {
     }
     if (buffer === null) {
       setPolicyError('Informe um intervalo inteiro entre 0 e 240.');
+      setPolicyMessage(null);
+      return;
+    }
+    if (horizon === null) {
+      setPolicyError('Informe uma antecedência máxima inteira entre 0 e 365.');
       setPolicyMessage(null);
       return;
     }
@@ -118,11 +126,13 @@ export function AdminSettingsPage() {
           booking_min_advance_minutes: booking,
           cancellation_min_advance_minutes: cancellation,
           appointment_buffer_minutes: buffer,
+          booking_max_advance_days: horizon,
         },
       });
       setBookingAdvance(String(response.settings.booking_min_advance_minutes ?? booking));
       setCancellationAdvance(String(response.settings.cancellation_min_advance_minutes ?? cancellation));
       setBufferMinutes(String(response.settings.appointment_buffer_minutes ?? buffer));
+      setMaxAdvanceDays(String(response.settings.booking_max_advance_days ?? horizon));
       setPolicyMessage('Políticas de antecedência salvas.');
     } catch (caught) {
       setPolicyError(messageFrom(caught, 'Não foi possível salvar as políticas de antecedência.'));
@@ -258,6 +268,20 @@ export function AdminSettingsPage() {
             />
             <div className="min-w-0 md:col-span-2">
               <p className="mb-4 max-w-xl text-sm normal-case tracking-normal text-muted">
+                Quantidade máxima de dias no futuro disponível para novos agendamentos. Use 0 para não limitar.
+              </p>
+              <Field
+                label="Antecedência máxima para agendamento"
+                value={maxAdvanceDays}
+                onChange={(value) => {
+                  setMaxAdvanceDays(value);
+                  setPolicyMessage(null);
+                }}
+                inputMode="numeric"
+              />
+            </div>
+            <div className="min-w-0 md:col-span-2">
+              <p className="mb-4 max-w-xl text-sm normal-case tracking-normal text-muted">
                 Tempo reservado após cada atendimento antes do próximo horário. Use 0 para não aplicar intervalo.
               </p>
               <Field
@@ -297,6 +321,7 @@ export function AdminSettingsPage() {
 const ADVANCE_MINUTES = /^(0|[1-9]\d*)$/;
 const ADVANCE_MAX_MINUTES = 43_200;
 const BUFFER_MAX_MINUTES = 240;
+const HORIZON_MAX_DAYS = 365;
 
 function boundedMinutes(value: string, max: number): number | null {
   const trimmed = value.trim();

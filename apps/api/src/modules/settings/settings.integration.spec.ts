@@ -11,6 +11,7 @@ const advanceDefaults = {
   booking_min_advance_minutes: 0,
   cancellation_min_advance_minutes: 0,
   appointment_buffer_minutes: 0,
+  booking_max_advance_days: 0,
 };
 
 describe('tenant settings', () => {
@@ -476,6 +477,94 @@ describe('tenant settings', () => {
       .set('Authorization', `Bearer ${adminBToken}`);
     expect(readA.body.settings.appointment_buffer_minutes).toBe(15);
     expect(readB.body.settings.appointment_buffer_minutes).toBe(30);
+  });
+
+  it('saves a booking horizon of zero and of thirty days', async () => {
+    const absent = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantA.id, key: 'booking_max_advance_days' } },
+    });
+    expect(absent).toBeNull();
+
+    const zero = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { booking_max_advance_days: 0 } });
+    expect(zero.status).toBe(200);
+    expect(zero.body.settings.booking_max_advance_days).toBe(0);
+    const storedZero = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantA.id, key: 'booking_max_advance_days' } },
+    });
+    expect(storedZero?.value).toBe('0');
+
+    const saved = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { booking_max_advance_days: 30 } });
+    expect(saved.status).toBe(200);
+    expect(saved.body.settings.booking_max_advance_days).toBe(30);
+  });
+
+  it('rejects an invalid booking horizon and keeps the tenant value', async () => {
+    const negative = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { booking_max_advance_days: -1 } });
+    const decimal = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { booking_max_advance_days: 10.5 } });
+    const text = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { booking_max_advance_days: '30' } });
+    const empty = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { booking_max_advance_days: null } });
+    const tooLarge = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { booking_max_advance_days: 366 } });
+    const foreign = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ tenantId: tenantB.id, settings: { booking_max_advance_days: 7 } });
+
+    expect(negative.status).toBe(400);
+    expect(negative.body.message).toContain('A antecedência máxima não pode ser negativa.');
+    expect(decimal.status).toBe(400);
+    expect(decimal.body.message).toContain('A antecedência máxima precisa ser um número inteiro de dias.');
+    expect(text.status).toBe(400);
+    expect(empty.status).toBe(400);
+    expect(tooLarge.status).toBe(400);
+    expect(tooLarge.body.message).toContain('A antecedência máxima é de 365 dias.');
+    expect(foreign.status).toBe(400);
+
+    const storedA = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantA.id, key: 'booking_max_advance_days' } },
+    });
+    const storedB = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantB.id, key: 'booking_max_advance_days' } },
+    });
+    expect(storedA?.value).toBe('30');
+    expect(storedB).toBeNull();
+  });
+
+  it('keeps the booking horizon inside the authenticated tenant', async () => {
+    const savedB = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminBToken}`)
+      .send({ settings: { booking_max_advance_days: 7 } });
+    expect(savedB.status).toBe(200);
+
+    const readA = await request(app.getHttpServer())
+      .get('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`);
+    const readB = await request(app.getHttpServer())
+      .get('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminBToken}`);
+    expect(readA.body.settings.booking_max_advance_days).toBe(30);
+    expect(readB.body.settings.booking_max_advance_days).toBe(7);
   });
 });
 
