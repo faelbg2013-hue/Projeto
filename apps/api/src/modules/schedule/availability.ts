@@ -70,6 +70,20 @@ export function subtractWindow(windows: MinuteWindow[], cut: MinuteWindow): Minu
   return next.filter((window) => window.end > window.start);
 }
 
+export function intersectWindows(left: MinuteWindow[], right: MinuteWindow[]): MinuteWindow[] {
+  const overlap: MinuteWindow[] = [];
+  for (const first of left) {
+    for (const second of right) {
+      const start = Math.max(first.start, second.start);
+      const end = Math.min(first.end, second.end);
+      if (end > start) {
+        overlap.push({ start, end });
+      }
+    }
+  }
+  return mergeWindows(overlap);
+}
+
 function exceptionWindow(item: AvailabilityException): MinuteWindow {
   if (item.start === null || item.end === null) {
     return { start: 0, end: DAY_MINUTES };
@@ -101,8 +115,10 @@ export function buildSlots(windows: MinuteWindow[], durationMinutes: number, ste
 }
 
 /**
- * Ordem: agenda semanal, exceções OPEN, exceções BLOCK, bloqueios, ocupações futuras.
- * `occupied` fica vazio nesta fase. A Fase 05 passa os agendamentos confirmados aqui.
+ * Ordem: agenda semanal, exceções OPEN, exceções BLOCK, bloqueios, ocupações.
+ * `establishment` null ou omitido: o tenant ainda não salvou business_hours e a agenda do profissional segue sozinha.
+ * `establishment` vazio: o estabelecimento está fechado nesse dia e nenhum slot sai.
+ * Quando há janela, o slot precisa caber na interseção, inclusive o fim do serviço.
  */
 export function calculateAvailability(input: {
   date: string;
@@ -112,6 +128,7 @@ export function calculateAvailability(input: {
   exceptions: AvailabilityException[];
   blocks: InstantRange[];
   occupied?: InstantRange[];
+  establishment?: MinuteWindow[] | null;
 }): string[] {
   const opens = input.exceptions.filter((item) => item.type === 'OPEN').map(exceptionWindow);
   let windows = mergeWindows([...input.weekly, ...opens]);
@@ -123,6 +140,9 @@ export function calculateAvailability(input: {
     if (cut) {
       windows = subtractWindow(windows, cut);
     }
+  }
+  if (input.establishment != null) {
+    windows = intersectWindows(windows, input.establishment);
   }
   return buildSlots(windows, input.durationMinutes, input.stepMinutes);
 }

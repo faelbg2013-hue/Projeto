@@ -10,6 +10,11 @@ export const BUSINESS_HOUR_DAYS = [
   'sunday',
 ] as const satisfies ReadonlyArray<keyof BusinessHours>;
 
+/** 1 = segunda … 7 = domingo, o mesmo índice de `dayOfWeek` em America/Sao_Paulo. */
+export function businessHoursDayKey(dayOfWeek: number): (typeof BUSINESS_HOUR_DAYS)[number] | null {
+  return BUSINESS_HOUR_DAYS[dayOfWeek - 1] ?? null;
+}
+
 const WALL_TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export function isWallTime(value: unknown): value is string {

@@ -125,4 +125,152 @@ describe('availability engine', () => {
     expect(slots[0]).toBe('08:30');
     expect(slots).not.toContain('08:00');
   });
+
+  it('keeps the professional window when establishment hours are absent', () => {
+    const slots = calculateAvailability({
+      date: '2026-10-05',
+      durationMinutes: 30,
+      stepMinutes: SLOT_STEP_MINUTES,
+      weekly: [window('07:00', '20:00')],
+      exceptions: [],
+      blocks: [],
+      establishment: null,
+    });
+
+    expect(slots[0]).toBe('07:00');
+    expect(slots.at(-1)).toBe('19:30');
+  });
+
+  it('intersects an earlier professional start with the establishment opening', () => {
+    const slots = calculateAvailability({
+      date: '2026-10-05',
+      durationMinutes: 30,
+      stepMinutes: SLOT_STEP_MINUTES,
+      weekly: [window('07:00', '18:00')],
+      exceptions: [],
+      blocks: [],
+      establishment: [window('08:00', '18:00')],
+    });
+
+    expect(slots[0]).toBe('08:00');
+    expect(slots).not.toContain('07:00');
+    expect(slots).not.toContain('07:45');
+    expect(slots.at(-1)).toBe('17:30');
+  });
+
+  it('intersects a later professional end with the establishment closing', () => {
+    const slots = calculateAvailability({
+      date: '2026-10-05',
+      durationMinutes: 30,
+      stepMinutes: SLOT_STEP_MINUTES,
+      weekly: [window('08:00', '20:00')],
+      exceptions: [],
+      blocks: [],
+      establishment: [window('08:00', '18:00')],
+    });
+
+    expect(slots[0]).toBe('08:00');
+    expect(slots.at(-1)).toBe('17:30');
+    expect(slots).not.toContain('17:45');
+    expect(slots).not.toContain('18:00');
+    expect(slots).not.toContain('19:30');
+  });
+
+  it('returns the partial overlap of professional and establishment windows', () => {
+    const slots = calculateAvailability({
+      date: '2026-10-05',
+      durationMinutes: 30,
+      stepMinutes: SLOT_STEP_MINUTES,
+      weekly: [window('08:00', '12:00')],
+      exceptions: [],
+      blocks: [],
+      establishment: [window('10:00', '16:00')],
+    });
+
+    expect(slots[0]).toBe('10:00');
+    expect(slots.at(-1)).toBe('11:30');
+    expect(slots).not.toContain('09:45');
+    expect(slots).not.toContain('12:00');
+  });
+
+  it('returns no slots when the establishment is closed', () => {
+    const slots = calculateAvailability({
+      date: '2026-10-05',
+      durationMinutes: 30,
+      stepMinutes: SLOT_STEP_MINUTES,
+      weekly: [window('07:00', '20:00')],
+      exceptions: [],
+      blocks: [],
+      establishment: [],
+    });
+
+    expect(slots).toEqual([]);
+  });
+
+  it('keeps a professional block inside the intersection', () => {
+    const slots = calculateAvailability({
+      date: '2026-10-05',
+      durationMinutes: 30,
+      stepMinutes: SLOT_STEP_MINUTES,
+      weekly: [window('07:00', '20:00')],
+      exceptions: [],
+      blocks: [
+        {
+          startAt: new Date('2026-10-05T12:00:00-03:00'),
+          endAt: new Date('2026-10-05T13:00:00-03:00'),
+        },
+      ],
+      establishment: [window('08:00', '18:00')],
+    });
+
+    expect(slots).toContain('08:00');
+    expect(slots).toContain('11:30');
+    expect(slots).not.toContain('12:00');
+    expect(slots).not.toContain('12:30');
+    expect(slots).toContain('13:00');
+    expect(slots).not.toContain('07:45');
+    expect(slots.at(-1)).toBe('17:30');
+  });
+
+  it('clips an OPEN exception to the establishment and still honors BLOCK', () => {
+    const openOnly = calculateAvailability({
+      date: '2026-10-05',
+      durationMinutes: 30,
+      stepMinutes: SLOT_STEP_MINUTES,
+      weekly: [],
+      exceptions: [{ type: 'OPEN', start: parseWallTime('07:00'), end: parseWallTime('20:00') }],
+      blocks: [],
+      establishment: [window('08:00', '18:00')],
+    });
+    expect(openOnly[0]).toBe('08:00');
+    expect(openOnly.at(-1)).toBe('17:30');
+    expect(openOnly).not.toContain('07:00');
+
+    const blocked = calculateAvailability({
+      date: '2026-10-05',
+      durationMinutes: 30,
+      stepMinutes: SLOT_STEP_MINUTES,
+      weekly: [window('07:00', '20:00')],
+      exceptions: [{ type: 'BLOCK', start: null, end: null }],
+      blocks: [],
+      establishment: [window('08:00', '18:00')],
+    });
+    expect(blocked).toEqual([]);
+  });
+
+  it('does not offer a slot that starts at opening but would begin before it', () => {
+    const slots = calculateAvailability({
+      date: '2026-10-05',
+      durationMinutes: 45,
+      stepMinutes: SLOT_STEP_MINUTES,
+      weekly: [window('07:00', '20:00')],
+      exceptions: [],
+      blocks: [],
+      establishment: [window('08:00', '18:00')],
+    });
+
+    expect(slots[0]).toBe('08:00');
+    expect(slots.at(-1)).toBe('17:15');
+    expect(slots).not.toContain('17:30');
+  });
 });

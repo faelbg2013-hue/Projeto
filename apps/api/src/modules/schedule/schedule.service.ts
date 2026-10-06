@@ -3,6 +3,7 @@ import { AppointmentStatus, type Prisma } from '@prisma/client';
 import type {
   AuthUser,
   Availability,
+  BusinessHours,
   Paginated,
   ProfessionalSchedule,
   ScheduleException,
@@ -23,6 +24,8 @@ import {
   todayInScheduleZone,
 } from '../../common/time/schedule-clock';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { businessHoursDayKey, businessHoursError } from '../settings/business-hours';
+import type { TenantSettingKey } from '../settings/settings.constants';
 import { calculateAvailability, hasOverlap, type MinuteWindow } from './availability';
 import type { AvailabilityQueryDto } from './dto/schedule.dto';
 import type {
@@ -33,6 +36,8 @@ import type {
 } from './dto/schedule.dto';
 
 const NOT_FOUND = 'Recurso não encontrado';
+const INVALID_STORED_HOURS = 'Horário de funcionamento armazenado é inválido.';
+const BUSINESS_HOURS_KEY = 'business_hours' satisfies TenantSettingKey;
 
 export const OCCUPYING_APPOINTMENT_STATUSES = [
   AppointmentStatus.PENDING,
@@ -391,7 +396,42 @@ export class ScheduleService {
       })),
       blocks: blocks.map((row) => ({ startAt: row.startAt, endAt: row.endAt })),
       occupied,
+      establishment: await this.establishmentWindows(db, input.tenantId, input.date),
     });
+  }
+
+  /**
+   * null: o tenant ainda não gravou business_hours e a disponibilidade do profissional permanece a atual.
+   * []: o dia está fechado no estabelecimento.
+   */
+  private async establishmentWindows(
+    db: ScheduleReader,
+    tenantId: string,
+    date: string,
+  ): Promise<MinuteWindow[] | null> {
+    const row = await db.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId, key: BUSINESS_HOURS_KEY } },
+    });
+    if (!row) {
+      return null;
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(row.value);
+    } catch {
+      throw new BadRequestException(INVALID_STORED_HOURS);
+    }
+    if (businessHoursError(parsed)) {
+      throw new BadRequestException(INVALID_STORED_HOURS);
+    }
+
+    const key = businessHoursDayKey(dayOfWeek(date));
+    const day = key ? (parsed as BusinessHours)[key] : null;
+    if (!day?.enabled || day.open == null || day.close == null) {
+      return [];
+    }
+    return [{ start: parseWallTime(day.open), end: parseWallTime(day.close) }];
   }
 
   private async readSchedule(professionalId: string, tenantId: string): Promise<ProfessionalSchedule> {
