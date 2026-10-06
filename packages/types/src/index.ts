@@ -310,6 +310,8 @@ export interface TenantSettingValues {
   booking_min_advance_minutes?: number;
   /** Minutos. Ausente no banco vale 0 e não restringe o cancelamento do cliente. */
   cancellation_min_advance_minutes?: number;
+  /** Minutos depois de cada atendimento antes do próximo. Ausente no banco vale 0. */
+  appointment_buffer_minutes?: number;
 }
 
 export interface TenantSettingsResponse {

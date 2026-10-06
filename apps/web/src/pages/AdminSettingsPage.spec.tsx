@@ -216,8 +216,14 @@ describe('AdminSettingsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Salvar políticas' }));
 
     expect(settingsService.update).toHaveBeenCalledWith({
-      settings: { booking_min_advance_minutes: 120, cancellation_min_advance_minutes: 60 },
+      settings: {
+        booking_min_advance_minutes: 120,
+        cancellation_min_advance_minutes: 60,
+        appointment_buffer_minutes: 0,
+      },
     });
+    expect(screen.getByLabelText('Intervalo entre atendimentos')).toHaveValue('0');
+    expect(screen.getByText(/Tempo reservado após cada atendimento/)).toBeInTheDocument();
     expect(await screen.findByText('Políticas de antecedência salvas.')).toBeInTheDocument();
   });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dayOfWeek, parseWallTime, SLOT_STEP_MINUTES } from '../../common/time/schedule-clock';
-import { applyBookingAdvance, calculateAvailability } from './availability';
+import { applyAppointmentBuffer, applyBookingAdvance, calculateAvailability } from './availability';
 
 function window(start: string, end: string) {
   return { start: parseWallTime(start), end: parseWallTime(end) };
@@ -293,5 +293,35 @@ describe('availability engine', () => {
     const now = new Date('2026-10-05T10:00:00-03:00');
 
     expect(applyBookingAdvance('2026-10-05', slots, now, 120)).toEqual(['12:00']);
+  });
+
+  it('keeps the grid when the appointment buffer is zero', () => {
+    const slots = applyAppointmentBuffer(
+      '2026-10-05',
+      ['10:30', '10:45'],
+      30,
+      0,
+      [{ startAt: new Date('2026-10-05T10:00:00-03:00'), endAt: new Date('2026-10-05T10:30:00-03:00') }],
+    );
+
+    expect(slots).toEqual(['10:30', '10:45']);
+  });
+
+  it('removes the start inside a 15 minute buffer and keeps the following grid slot', () => {
+    const occupied = [{ startAt: new Date('2026-10-05T10:00:00-03:00'), endAt: new Date('2026-10-05T10:30:00-03:00') }];
+
+    expect(applyAppointmentBuffer('2026-10-05', ['10:30', '10:45'], 30, 15, occupied)).toEqual(['10:45']);
+  });
+
+  it('does not round a 10 minute buffer up to the next grid boundary', () => {
+    const occupied = [{ startAt: new Date('2026-10-05T10:00:00-03:00'), endAt: new Date('2026-10-05T10:30:00-03:00') }];
+
+    expect(applyAppointmentBuffer('2026-10-05', ['10:30', '10:45'], 30, 10, occupied)).toEqual(['10:45']);
+  });
+
+  it('rejects a start whose own buffer would reach the next appointment', () => {
+    const occupied = [{ startAt: new Date('2026-10-05T11:00:00-03:00'), endAt: new Date('2026-10-05T11:30:00-03:00') }];
+
+    expect(applyAppointmentBuffer('2026-10-05', ['10:00', '10:15'], 30, 30, occupied)).toEqual(['10:00']);
   });
 });

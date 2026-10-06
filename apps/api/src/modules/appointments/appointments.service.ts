@@ -21,8 +21,12 @@ import {
 import { ScheduleNow } from '../../common/time/schedule-now';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { PointsService } from '../points/points.service';
-import { ScheduleService } from '../schedule/schedule.service';
-import { CANCELLATION_MIN_ADVANCE_KEY, readAdvanceMinutes } from '../settings/advance-policy';
+import { OCCUPYING_APPOINTMENT_STATUSES, ScheduleService } from '../schedule/schedule.service';
+import {
+  CANCELLATION_MIN_ADVANCE_KEY,
+  readAdvanceMinutes,
+  readAppointmentBufferMinutes,
+} from '../settings/advance-policy';
 import type {
   AdminAppointmentQueryDto,
   AppointmentMeQueryDto,
@@ -209,6 +213,8 @@ export class AppointmentsService {
           }
 
           const endAt = new Date(startAt.getTime() + serviceNow.durationMinutes * 60_000);
+          const bufferMinutes = await readAppointmentBufferMinutes(tx, actor.tenantId);
+          const bufferMs = bufferMinutes * 60_000;
           const slots = await this.schedule.computeSlots(tx, {
             tenantId: actor.tenantId,
             professionalId: professionalNow.id,
@@ -222,9 +228,9 @@ export class AppointmentsService {
             where: {
               tenantId: actor.tenantId,
               professionalId: professionalNow.id,
-              status: { in: ['PENDING', 'CONFIRMED', 'COMPLETED', 'NO_SHOW'] },
-              startAt: { lt: endAt },
-              endAt: { gt: startAt },
+              status: { in: [...OCCUPYING_APPOINTMENT_STATUSES] },
+              startAt: { lt: new Date(endAt.getTime() + bufferMs) },
+              endAt: { gt: new Date(startAt.getTime() - bufferMs) },
             },
             select: { id: true },
           });

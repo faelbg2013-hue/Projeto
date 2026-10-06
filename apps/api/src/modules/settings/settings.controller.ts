@@ -29,7 +29,7 @@ export class SettingsController {
     operationId: 'getSettings',
     summary: 'Lê as preferências do tenant autenticado',
     description:
-      'Somente ADMIN. O tenant sai da sessão. business_hours aparece só quando já foi salvo. booking_min_advance_minutes e cancellation_min_advance_minutes sempre aparecem: sem linha no banco, o valor efetivo é 0 e nada é gravado.',
+      'Somente ADMIN. O tenant sai da sessão. business_hours aparece só quando já foi salvo. booking_min_advance_minutes, cancellation_min_advance_minutes e appointment_buffer_minutes sempre aparecem: sem linha no banco, o valor efetivo é 0 e nada é gravado.',
   })
   @ApiOkResponse({ type: SettingsResponseDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
@@ -43,7 +43,7 @@ export class SettingsController {
     operationId: 'updateSettings',
     summary: 'Atualiza as preferências permitidas do tenant autenticado',
     description:
-      'Somente ADMIN. Aceita business_hours completo e as antecedências em minutos inteiros de 0 a 43200. tenantId, null, decimal, texto e chaves fora do contrato são rejeitados. Campos omitidos não são apagados.',
+      'Somente ADMIN. Aceita business_hours completo, as antecedências em minutos inteiros de 0 a 43200 e appointment_buffer_minutes de 0 a 240. tenantId, null, decimal, texto e chaves fora do contrato são rejeitados. Campos omitidos não são apagados.',
   })
   @ApiBody({ type: UpdateSettingsDto })
   @ApiOkResponse({ type: SettingsResponseDto })

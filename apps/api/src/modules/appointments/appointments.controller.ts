@@ -53,7 +53,7 @@ export class AppointmentsController {
     operationId: 'createAppointment',
     summary: 'Cria um agendamento confirmado para o cliente autenticado',
     description:
-      'Somente CLIENT, sempre para o próprio cliente. clientId, tenantId, status, preço, duração, pontos, redemptionPointsSnapshot e newBalance são rejeitados. bookingMode POINTS relê o serviço, trava a linha do cliente e a do profissional, e cria o agendamento junto com um REDEEM. Saldo insuficiente ou horário ocupado responde 409 e não grava nenhum dos dois. A antecedência mínima de agendamento é relida na transação: um início anterior a agora mais booking_min_advance_minutes responde 409, o mesmo conflito de horário indisponível. Idempotency-Key repetida não gera outro resgate. O preço em reais não é um pagamento.',
+      'Somente CLIENT, sempre para o próprio cliente. clientId, tenantId, status, preço, duração, pontos, redemptionPointsSnapshot e newBalance são rejeitados. bookingMode POINTS relê o serviço, trava a linha do cliente e a do profissional, e cria o agendamento junto com um REDEEM. Saldo insuficiente, horário ocupado ou intervalo appointment_buffer_minutes insuficiente responde 409 e não grava nenhum dos dois. A antecedência mínima de agendamento é relida na transação: um início anterior a agora mais booking_min_advance_minutes responde 409, o mesmo conflito de horário indisponível. Idempotency-Key repetida não gera outro resgate. O preço em reais não é um pagamento.',
   })
   @ApiHeader({
     name: 'Idempotency-Key',

@@ -25,10 +25,16 @@ import {
 } from '../../common/time/schedule-clock';
 import { ScheduleNow } from '../../common/time/schedule-now';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
-import { BOOKING_MIN_ADVANCE_KEY, readAdvanceMinutes } from '../settings/advance-policy';
+import { BOOKING_MIN_ADVANCE_KEY, readAdvanceMinutes, readAppointmentBufferMinutes } from '../settings/advance-policy';
 import { businessHoursDayKey, businessHoursError } from '../settings/business-hours';
 import type { TenantSettingKey } from '../settings/settings.constants';
-import { applyBookingAdvance, calculateAvailability, hasOverlap, type MinuteWindow } from './availability';
+import {
+  applyAppointmentBuffer,
+  applyBookingAdvance,
+  calculateAvailability,
+  hasOverlap,
+  type MinuteWindow,
+} from './availability';
 import type { AvailabilityQueryDto } from './dto/schedule.dto';
 import type {
   CreateScheduleExceptionDto,
@@ -356,6 +362,8 @@ export class ScheduleService {
     input: { tenantId: string; professionalId: string; date: string; durationMinutes: number },
   ): Promise<string[]> {
     const bounds = dayBounds(input.date);
+    const bufferMinutes = await readAppointmentBufferMinutes(db, input.tenantId);
+    const bufferMs = bufferMinutes * 60_000;
     const weekly = await db.professionalSchedule.findMany({
       where: {
         tenantId: input.tenantId,
@@ -380,13 +388,13 @@ export class ScheduleService {
         tenantId: input.tenantId,
         professionalId: input.professionalId,
         status: { in: [...OCCUPYING_APPOINTMENT_STATUSES] },
-        startAt: { lt: bounds.endAt },
-        endAt: { gt: bounds.startAt },
+        startAt: { lt: new Date(bounds.endAt.getTime() + bufferMs) },
+        endAt: { gt: new Date(bounds.startAt.getTime() - bufferMs) },
       },
       select: { startAt: true, endAt: true },
     });
 
-    const slots = calculateAvailability({
+    const openSlots = calculateAvailability({
       date: input.date,
       durationMinutes: input.durationMinutes,
       stepMinutes: SLOT_STEP_MINUTES,
@@ -403,6 +411,7 @@ export class ScheduleService {
       occupied,
       establishment: await this.establishmentWindows(db, input.tenantId, input.date),
     });
+    const slots = applyAppointmentBuffer(input.date, openSlots, input.durationMinutes, bufferMinutes, occupied);
     const advance = await readAdvanceMinutes(db, input.tenantId, BOOKING_MIN_ADVANCE_KEY);
     return applyBookingAdvance(input.date, slots, this.clock.now(), advance);
   }

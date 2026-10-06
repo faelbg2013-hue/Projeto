@@ -148,6 +148,44 @@ export function calculateAvailability(input: {
 }
 
 /**
+ * Os dois atendimentos ocupam [início, fim do serviço + buffer).
+ * O toque exato no fim do buffer não conflita. Buffer 0 é o intervalo do serviço.
+ */
+export function appointmentsConflict(
+  left: InstantRange,
+  right: InstantRange,
+  bufferMinutes: number,
+): boolean {
+  const bufferMs = bufferMinutes * 60_000;
+  return (
+    left.startAt.getTime() < right.endAt.getTime() + bufferMs &&
+    right.startAt.getTime() < left.endAt.getTime() + bufferMs
+  );
+}
+
+/**
+ * Remove starts cuja janela operacional cruza outro atendimento.
+ * Não move a grade de 15 minutos e não encolhe jornada nem horário do estabelecimento.
+ * Bloqueios e exceções já foram aplicados sobre o serviço, sem o buffer.
+ */
+export function applyAppointmentBuffer(
+  date: string,
+  slots: string[],
+  durationMinutes: number,
+  bufferMinutes: number,
+  occupied: InstantRange[],
+): string[] {
+  if (bufferMinutes <= 0 || occupied.length === 0) {
+    return slots;
+  }
+  return slots.filter((slot) => {
+    const startAt = parseScheduleInstant(`${date}T${slot}:00`);
+    const endAt = new Date(startAt.getTime() + durationMinutes * 60_000);
+    return !occupied.some((item) => appointmentsConflict({ startAt, endAt }, item, bufferMinutes));
+  });
+}
+
+/**
  * 0 preserva a grade atual, inclusive horários do dia que já passaram.
  * Com minutos positivos, o início do slot precisa ser maior ou igual a agora + antecedência.
  * O relógio não é arredondado para o passo de 15 minutos.

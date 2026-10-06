@@ -10,6 +10,7 @@ const password = 'senha-segura-123';
 const advanceDefaults = {
   booking_min_advance_minutes: 0,
   cancellation_min_advance_minutes: 0,
+  appointment_buffer_minutes: 0,
 };
 
 describe('tenant settings', () => {
@@ -384,6 +385,97 @@ describe('tenant settings', () => {
       where: { tenantId_key: { tenantId: tenantB.id, key: 'booking_min_advance_minutes' } },
     });
     expect(storedB?.value).toBe('15');
+  });
+
+  it('saves an appointment buffer of zero and of fifteen minutes', async () => {
+    const absent = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantA.id, key: 'appointment_buffer_minutes' } },
+    });
+    expect(absent).toBeNull();
+
+    const zero = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { appointment_buffer_minutes: 0 } });
+    expect(zero.status).toBe(200);
+    expect(zero.body.settings.appointment_buffer_minutes).toBe(0);
+    const storedZero = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantA.id, key: 'appointment_buffer_minutes' } },
+    });
+    expect(storedZero?.value).toBe('0');
+
+    const saved = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { appointment_buffer_minutes: 15 } });
+    expect(saved.status).toBe(200);
+    expect(saved.body.settings.appointment_buffer_minutes).toBe(15);
+  });
+
+  it('rejects an invalid appointment buffer and keeps the tenant value', async () => {
+    const before = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantA.id, key: 'appointment_buffer_minutes' } },
+    });
+    const negative = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { appointment_buffer_minutes: -5 } });
+    const decimal = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { appointment_buffer_minutes: 10.5 } });
+    const text = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { appointment_buffer_minutes: '15' } });
+    const empty = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { appointment_buffer_minutes: null } });
+    const tooLarge = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { appointment_buffer_minutes: 241 } });
+    const foreign = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ tenantId: tenantB.id, settings: { appointment_buffer_minutes: 30 } });
+
+    expect(negative.status).toBe(400);
+    expect(negative.body.message).toContain('O intervalo não pode ser negativo.');
+    expect(decimal.status).toBe(400);
+    expect(decimal.body.message).toContain('O intervalo precisa ser um número inteiro de minutos.');
+    expect(text.status).toBe(400);
+    expect(empty.status).toBe(400);
+    expect(tooLarge.status).toBe(400);
+    expect(tooLarge.body.message).toContain('O intervalo máximo é de 240 minutos.');
+    expect(foreign.status).toBe(400);
+
+    const after = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantA.id, key: 'appointment_buffer_minutes' } },
+    });
+    expect(after?.value).toBe(before?.value);
+    const storedB = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantB.id, key: 'appointment_buffer_minutes' } },
+    });
+    expect(storedB).toBeNull();
+  });
+
+  it('keeps the appointment buffer inside the authenticated tenant', async () => {
+    await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminBToken}`)
+      .send({ settings: { appointment_buffer_minutes: 30 } })
+      .expect(200);
+
+    const readA = await request(app.getHttpServer())
+      .get('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`);
+    const readB = await request(app.getHttpServer())
+      .get('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminBToken}`);
+    expect(readA.body.settings.appointment_buffer_minutes).toBe(15);
+    expect(readB.body.settings.appointment_buffer_minutes).toBe(30);
   });
 });
 

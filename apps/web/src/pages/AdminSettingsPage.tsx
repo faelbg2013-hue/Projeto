@@ -23,6 +23,7 @@ export function AdminSettingsPage() {
   const [pending, setPending] = useState(false);
   const [bookingAdvance, setBookingAdvance] = useState('0');
   const [cancellationAdvance, setCancellationAdvance] = useState('0');
+  const [bufferMinutes, setBufferMinutes] = useState('0');
   const [policyError, setPolicyError] = useState<string | null>(null);
   const [policyMessage, setPolicyMessage] = useState<string | null>(null);
   const [policyPending, setPolicyPending] = useState(false);
@@ -36,6 +37,7 @@ export function AdminSettingsPage() {
           setDraft(draftFromSettings(response.settings));
           setBookingAdvance(String(response.settings.booking_min_advance_minutes ?? 0));
           setCancellationAdvance(String(response.settings.cancellation_min_advance_minutes ?? 0));
+          setBufferMinutes(String(response.settings.appointment_buffer_minutes ?? 0));
         }
       })
       .catch((caught: unknown) => {
@@ -93,10 +95,16 @@ export function AdminSettingsPage() {
     if (policyPending) {
       return;
     }
-    const booking = advanceMinutes(bookingAdvance);
-    const cancellation = advanceMinutes(cancellationAdvance);
+    const booking = boundedMinutes(bookingAdvance, ADVANCE_MAX_MINUTES);
+    const cancellation = boundedMinutes(cancellationAdvance, ADVANCE_MAX_MINUTES);
+    const buffer = boundedMinutes(bufferMinutes, BUFFER_MAX_MINUTES);
     if (booking === null || cancellation === null) {
       setPolicyError('Informe minutos inteiros entre 0 e 43200.');
+      setPolicyMessage(null);
+      return;
+    }
+    if (buffer === null) {
+      setPolicyError('Informe um intervalo inteiro entre 0 e 240.');
       setPolicyMessage(null);
       return;
     }
@@ -109,10 +117,12 @@ export function AdminSettingsPage() {
         settings: {
           booking_min_advance_minutes: booking,
           cancellation_min_advance_minutes: cancellation,
+          appointment_buffer_minutes: buffer,
         },
       });
       setBookingAdvance(String(response.settings.booking_min_advance_minutes ?? booking));
       setCancellationAdvance(String(response.settings.cancellation_min_advance_minutes ?? cancellation));
+      setBufferMinutes(String(response.settings.appointment_buffer_minutes ?? buffer));
       setPolicyMessage('Políticas de antecedência salvas.');
     } catch (caught) {
       setPolicyError(messageFrom(caught, 'Não foi possível salvar as políticas de antecedência.'));
@@ -246,6 +256,20 @@ export function AdminSettingsPage() {
               }}
               inputMode="numeric"
             />
+            <div className="min-w-0 md:col-span-2">
+              <p className="mb-4 max-w-xl text-sm normal-case tracking-normal text-muted">
+                Tempo reservado após cada atendimento antes do próximo horário. Use 0 para não aplicar intervalo.
+              </p>
+              <Field
+                label="Intervalo entre atendimentos"
+                value={bufferMinutes}
+                onChange={(value) => {
+                  setBufferMinutes(value);
+                  setPolicyMessage(null);
+                }}
+                inputMode="numeric"
+              />
+            </div>
             {policyError ? (
               <p role="alert" className="text-sm text-foreground md:col-span-2">
                 {policyError}
@@ -272,14 +296,15 @@ export function AdminSettingsPage() {
 
 const ADVANCE_MINUTES = /^(0|[1-9]\d*)$/;
 const ADVANCE_MAX_MINUTES = 43_200;
+const BUFFER_MAX_MINUTES = 240;
 
-function advanceMinutes(value: string): number | null {
+function boundedMinutes(value: string, max: number): number | null {
   const trimmed = value.trim();
   if (!ADVANCE_MINUTES.test(trimmed)) {
     return null;
   }
   const minutes = Number(trimmed);
-  if (minutes > ADVANCE_MAX_MINUTES) {
+  if (minutes > max) {
     return null;
   }
   return minutes;

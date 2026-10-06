@@ -16,7 +16,7 @@ import {
   ValidatorConstraint,
   type ValidatorConstraintInterface,
 } from 'class-validator';
-import { ADVANCE_MAX_MINUTES } from '../advance-policy';
+import { ADVANCE_MAX_MINUTES, APPOINTMENT_BUFFER_MAX_MINUTES } from '../advance-policy';
 import { businessDayError } from '../business-hours';
 
 const WALL_TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -104,6 +104,9 @@ export class BusinessHoursDto {
 const ADVANCE_INTEGER = 'A antecedência precisa ser um número inteiro de minutos.';
 const ADVANCE_NEGATIVE = 'A antecedência não pode ser negativa.';
 const ADVANCE_MAX = 'A antecedência máxima é de 43200 minutos.';
+const BUFFER_INTEGER = 'O intervalo precisa ser um número inteiro de minutos.';
+const BUFFER_NEGATIVE = 'O intervalo não pode ser negativo.';
+const BUFFER_MAX = 'O intervalo máximo é de 240 minutos.';
 
 /** Objeto fechado. Propriedades desconhecidas são rejeitadas pelo pipe. */
 export class TenantSettingValuesDto {
@@ -140,6 +143,20 @@ export class TenantSettingValuesDto {
   @Min(0, { message: ADVANCE_NEGATIVE })
   @Max(ADVANCE_MAX_MINUTES, { message: ADVANCE_MAX })
   cancellation_min_advance_minutes?: number;
+
+  @ApiPropertyOptional({
+    type: Number,
+    minimum: 0,
+    maximum: APPOINTMENT_BUFFER_MAX_MINUTES,
+    example: 0,
+    description:
+      'Minutos reservados depois de cada atendimento antes do próximo começar. 0 não acrescenta intervalo. Não altera a duração, o preço nem os pontos do serviço. A leitura devolve 0 quando a linha ainda não existe.',
+  })
+  @ValidateIf((_, value: unknown) => value !== undefined)
+  @IsInt({ message: BUFFER_INTEGER })
+  @Min(0, { message: BUFFER_NEGATIVE })
+  @Max(APPOINTMENT_BUFFER_MAX_MINUTES, { message: BUFFER_MAX })
+  appointment_buffer_minutes?: number;
 }
 
 export class UpdateSettingsDto {
