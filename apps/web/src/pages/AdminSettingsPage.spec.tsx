@@ -196,6 +196,31 @@ describe('AdminSettingsPage', () => {
     expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeEnabled();
   });
 
+  it('shows zero advance and saves the policies apart from the weekly hours', async () => {
+    vi.mocked(settingsService.update).mockImplementation(async (input) => ({
+      settings: {
+        booking_min_advance_minutes: input.settings?.booking_min_advance_minutes,
+        cancellation_min_advance_minutes: input.settings?.cancellation_min_advance_minutes,
+      },
+    }));
+    renderSettings();
+
+    expect(await screen.findByRole('heading', { name: 'Antecedência' })).toBeInTheDocument();
+    expect(screen.getByText(/0 minutos = sem antecedência mínima/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Antecedência mínima para agendamento')).toHaveValue('0');
+    expect(screen.getByLabelText('Antecedência mínima para cancelamento pelo cliente')).toHaveValue('0');
+    fireEvent.change(screen.getByLabelText('Antecedência mínima para agendamento'), { target: { value: '120' } });
+    fireEvent.change(screen.getByLabelText('Antecedência mínima para cancelamento pelo cliente'), {
+      target: { value: '60' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar políticas' }));
+
+    expect(settingsService.update).toHaveBeenCalledWith({
+      settings: { booking_min_advance_minutes: 120, cancellation_min_advance_minutes: 60 },
+    });
+    expect(await screen.findByText('Políticas de antecedência salvas.')).toBeInTheDocument();
+  });
+
   it('lets an admin open the settings page', async () => {
     renderSettings();
 

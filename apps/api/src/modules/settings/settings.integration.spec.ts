@@ -7,6 +7,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PasswordService } from '../../common/auth/password.service';
 
 const password = 'senha-segura-123';
+const advanceDefaults = {
+  booking_min_advance_minutes: 0,
+  cancellation_min_advance_minutes: 0,
+};
 
 describe('tenant settings', () => {
   const prisma = new PrismaClient();
@@ -93,7 +97,8 @@ describe('tenant settings', () => {
       .set('Authorization', `Bearer ${adminAToken}`);
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ settings: {} });
+    expect(response.body).toEqual({ settings: advanceDefaults });
+    expect(await prisma.tenantSetting.count({ where: { tenantId: tenantA.id } })).toBe(0);
   });
 
   it('persists nothing for an empty patch and reads the same document back', async () => {
@@ -103,7 +108,7 @@ describe('tenant settings', () => {
       .send({ settings: {} });
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ settings: {} });
+    expect(response.body).toEqual({ settings: advanceDefaults });
     const stored = await prisma.tenantSetting.findMany({ where: { tenantId: tenantA.id } });
     expect(stored).toEqual([]);
   });
@@ -150,8 +155,8 @@ describe('tenant settings', () => {
       .set('Authorization', `Bearer ${adminBToken}`);
     expect(readA.status).toBe(200);
     expect(readB.status).toBe(200);
-    expect(readA.body).toEqual({ settings: {} });
-    expect(readB.body).toEqual({ settings: {} });
+    expect(readA.body).toEqual({ settings: advanceDefaults });
+    expect(readB.body).toEqual({ settings: advanceDefaults });
     expect(JSON.stringify(readA.body)).not.toContain('vermelho');
     expect(JSON.stringify(readB.body)).not.toContain('azul');
 
@@ -198,13 +203,13 @@ describe('tenant settings', () => {
       .send({ settings: { business_hours: hours } });
 
     expect(saved.status).toBe(200);
-    expect(saved.body).toEqual({ settings: { business_hours: hours } });
+    expect(saved.body).toEqual({ settings: { ...advanceDefaults, business_hours: hours } });
 
     const read = await request(app.getHttpServer())
       .get('/api/v1/settings')
       .set('Authorization', `Bearer ${adminAToken}`);
     expect(read.status).toBe(200);
-    expect(read.body).toEqual({ settings: { business_hours: hours } });
+    expect(read.body).toEqual({ settings: { ...advanceDefaults, business_hours: hours } });
 
     const stored = await prisma.tenantSetting.findUnique({
       where: { tenantId_key: { tenantId: tenantA.id, key: 'business_hours' } },
@@ -287,6 +292,98 @@ describe('tenant settings', () => {
       where: { tenantId_key: { tenantId: tenantA.id, key: 'business_hours' } },
     });
     expect(after?.value).toBe(before?.value);
+  });
+
+  it('saves advance minutes for the authenticated tenant and reads them back', async () => {
+    const saved = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { booking_min_advance_minutes: 90, cancellation_min_advance_minutes: 120 } });
+
+    expect(saved.status).toBe(200);
+    expect(saved.body.settings.booking_min_advance_minutes).toBe(90);
+    expect(saved.body.settings.cancellation_min_advance_minutes).toBe(120);
+
+    const booking = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantA.id, key: 'booking_min_advance_minutes' } },
+    });
+    const cancellation = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantB.id, key: 'cancellation_min_advance_minutes' } },
+    });
+    expect(booking?.value).toBe('90');
+    expect(cancellation).toBeNull();
+  });
+
+  it('rejects a negative, a decimal, a string, null and a value above 43200 minutes', async () => {
+    const before = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantA.id, key: 'booking_min_advance_minutes' } },
+    });
+
+    const negative = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { booking_min_advance_minutes: -1 } });
+    const decimal = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { booking_min_advance_minutes: 10.5 } });
+    const text = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { cancellation_min_advance_minutes: '30' } });
+    const empty = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { booking_min_advance_minutes: null } });
+    const tooLarge = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ settings: { cancellation_min_advance_minutes: 43201 } });
+
+    expect(negative.status).toBe(400);
+    expect(negative.body.message).toContain('A antecedência não pode ser negativa.');
+    expect(decimal.status).toBe(400);
+    expect(decimal.body.message).toContain('A antecedência precisa ser um número inteiro de minutos.');
+    expect(text.status).toBe(400);
+    expect(empty.status).toBe(400);
+    expect(tooLarge.status).toBe(400);
+    expect(tooLarge.body.message).toContain('A antecedência máxima é de 43200 minutos.');
+
+    const after = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantA.id, key: 'booking_min_advance_minutes' } },
+    });
+    expect(after?.value).toBe(before?.value);
+  });
+
+  it('keeps advance minutes inside the authenticated tenant', async () => {
+    const savedB = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminBToken}`)
+      .send({ settings: { booking_min_advance_minutes: 15, cancellation_min_advance_minutes: 45 } });
+    expect(savedB.status).toBe(200);
+
+    const readA = await request(app.getHttpServer())
+      .get('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`);
+    const readB = await request(app.getHttpServer())
+      .get('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminBToken}`);
+
+    expect(readA.body.settings.booking_min_advance_minutes).toBe(90);
+    expect(readA.body.settings.cancellation_min_advance_minutes).toBe(120);
+    expect(readB.body.settings.booking_min_advance_minutes).toBe(15);
+    expect(readB.body.settings.cancellation_min_advance_minutes).toBe(45);
+    expect(JSON.stringify(readA.body)).not.toContain('"booking_min_advance_minutes":15');
+
+    const attack = await request(app.getHttpServer())
+      .patch('/api/v1/settings')
+      .set('Authorization', `Bearer ${adminAToken}`)
+      .send({ tenantId: tenantB.id, settings: { booking_min_advance_minutes: 15 } });
+    expect(attack.status).toBe(400);
+    const storedB = await prisma.tenantSetting.findUnique({
+      where: { tenantId_key: { tenantId: tenantB.id, key: 'booking_min_advance_minutes' } },
+    });
+    expect(storedB?.value).toBe('15');
   });
 });
 

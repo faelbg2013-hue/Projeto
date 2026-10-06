@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dayOfWeek, parseWallTime, SLOT_STEP_MINUTES } from '../../common/time/schedule-clock';
-import { calculateAvailability } from './availability';
+import { applyBookingAdvance, calculateAvailability } from './availability';
 
 function window(start: string, end: string) {
   return { start: parseWallTime(start), end: parseWallTime(end) };
@@ -272,5 +272,26 @@ describe('availability engine', () => {
     expect(slots[0]).toBe('08:00');
     expect(slots.at(-1)).toBe('17:15');
     expect(slots).not.toContain('17:30');
+  });
+
+  it('keeps the current grid when the booking advance is zero', () => {
+    const slots = ['08:00', '11:00', '11:15'];
+    const now = new Date('2026-10-05T10:07:00-03:00');
+
+    expect(applyBookingAdvance('2026-10-05', slots, now, 0)).toEqual(slots);
+  });
+
+  it('drops a start inside the advance and keeps the next 15 minute step', () => {
+    const slots = ['11:00', '11:15', '12:00'];
+    const now = new Date('2026-10-05T10:07:00-03:00');
+
+    expect(applyBookingAdvance('2026-10-05', slots, now, 60)).toEqual(['11:15', '12:00']);
+  });
+
+  it('allows a start exactly at now plus the advance in America/Sao_Paulo', () => {
+    const slots = ['11:45', '12:00'];
+    const now = new Date('2026-10-05T10:00:00-03:00');
+
+    expect(applyBookingAdvance('2026-10-05', slots, now, 120)).toEqual(['12:00']);
   });
 });

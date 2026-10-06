@@ -292,7 +292,7 @@ export interface BusinessHoursDay {
   close: string | null;
 }
 
-/** Horário do estabelecimento. Não altera a disponibilidade dos profissionais nesta etapa. */
+/** Horário do estabelecimento. Quando salvo, limita a disponibilidade do profissional. */
 export interface BusinessHours {
   monday: BusinessHoursDay;
   tuesday: BusinessHoursDay;
@@ -306,6 +306,10 @@ export interface BusinessHours {
 /** Chaves de preferência publicadas pela API. */
 export interface TenantSettingValues {
   business_hours?: BusinessHours;
+  /** Minutos. Ausente no banco vale 0 e não restringe o agendamento. */
+  booking_min_advance_minutes?: number;
+  /** Minutos. Ausente no banco vale 0 e não restringe o cancelamento do cliente. */
+  cancellation_min_advance_minutes?: number;
 }
 
 export interface TenantSettingsResponse {

@@ -18,9 +18,11 @@ import {
   parseScheduleInstant,
   todayInScheduleZone,
 } from '../../common/time/schedule-clock';
+import { ScheduleNow } from '../../common/time/schedule-now';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { PointsService } from '../points/points.service';
 import { ScheduleService } from '../schedule/schedule.service';
+import { CANCELLATION_MIN_ADVANCE_KEY, readAdvanceMinutes } from '../settings/advance-policy';
 import type {
   AdminAppointmentQueryDto,
   AppointmentMeQueryDto,
@@ -32,6 +34,7 @@ const NOT_FOUND = 'Recurso não encontrado';
 const PAST_DATE = 'Não é possível agendar em uma data passada.';
 const PAST_TIME = 'O horário já passou.';
 const TAKEN = 'Este horário não está mais disponível.';
+const CLIENT_CANCEL_TOO_LATE = 'O cancelamento pelo cliente exige mais antecedência.';
 const TRANSITION = 'A transição de status não é permitida.';
 const IDEMPOTENCY = 'A chave de idempotência já foi utilizada.';
 const INACTIVE_CLIENT = 'O cliente está inativo.';
@@ -113,6 +116,7 @@ export class AppointmentsService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(ScheduleService) private readonly schedule: ScheduleService,
     @Inject(PointsService) private readonly points: PointsService,
+    @Inject(ScheduleNow) private readonly clock: ScheduleNow,
   ) {}
 
   async create(
@@ -127,7 +131,8 @@ export class AppointmentsService {
     } catch (error) {
       clockError(error);
     }
-    if (date < todayInScheduleZone()) {
+    const now = this.clock.now();
+    if (date < todayInScheduleZone(now)) {
       throw new BadRequestException(PAST_DATE);
     }
     let startAt: Date;
@@ -136,7 +141,7 @@ export class AppointmentsService {
     } catch (error) {
       clockError(error);
     }
-    if (startAt.getTime() <= Date.now()) {
+    if (startAt.getTime() <= now.getTime()) {
       throw new BadRequestException(PAST_TIME);
     }
     const notes = optionalNotes(input.notes);
@@ -382,6 +387,13 @@ export class AppointmentsService {
         this.assertVisible(actor, current, action);
         if (current.status !== AppointmentStatus.CONFIRMED) {
           throw new ConflictException(TRANSITION);
+        }
+        if (action === 'cancel' && actor.role === UserRole.CLIENT) {
+          const minutes = await readAdvanceMinutes(tx, current.tenantId, CANCELLATION_MIN_ADVANCE_KEY);
+          const earliest = this.clock.now().getTime() + minutes * 60_000;
+          if (minutes > 0 && current.startAt.getTime() < earliest) {
+            throw new ConflictException(CLIENT_CANCEL_TOO_LATE);
+          }
         }
         if (action === 'cancel' && current.bookingMode === 'POINTS') {
           await this.points.recordReversal(tx, {

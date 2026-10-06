@@ -412,7 +412,7 @@ export class ScheduleController {
     operationId: 'getProfessionalAvailability',
     summary: 'Consulta os horários de início disponíveis em uma data',
     description:
-      'CLIENT, PROFESSIONAL e ADMIN do mesmo tenant. Uma data por requisição, no formato YYYY-MM-DD, em America/Sao_Paulo. Os inícios continuam de 15 minutos e o serviço precisa terminar dentro da interseção entre a jornada do profissional e o business_hours do tenant, quando essa configuração existir. Sem business_hours, vale só a jornada do profissional. Profissional ou serviço de outro tenant, inativo ou inexistente responde 404. Data passada responde 200 com slots vazios. Não cria reserva.',
+      'CLIENT, PROFESSIONAL e ADMIN do mesmo tenant. Uma data por requisição, no formato YYYY-MM-DD, em America/Sao_Paulo. Os inícios continuam de 15 minutos e o serviço precisa terminar dentro da interseção entre a jornada do profissional e o business_hours do tenant, quando essa configuração existir. Sem business_hours, vale só a jornada do profissional. booking_min_advance_minutes, quando maior que zero, omite inícios anteriores a agora mais essa antecedência, sem arredondar o relógio. 0 preserva a grade atual. Profissional ou serviço de outro tenant, inativo ou inexistente responde 404. Data passada responde 200 com slots vazios. Não cria reserva.',
   })
   @ApiQuery({ name: 'date', required: true, type: String, example: '2026-10-05' })
   @ApiQuery({ name: 'serviceId', required: true, type: String })

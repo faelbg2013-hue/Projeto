@@ -21,6 +21,11 @@ export function AdminSettingsPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [bookingAdvance, setBookingAdvance] = useState('0');
+  const [cancellationAdvance, setCancellationAdvance] = useState('0');
+  const [policyError, setPolicyError] = useState<string | null>(null);
+  const [policyMessage, setPolicyMessage] = useState<string | null>(null);
+  const [policyPending, setPolicyPending] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -29,6 +34,8 @@ export function AdminSettingsPage() {
       .then((response) => {
         if (active) {
           setDraft(draftFromSettings(response.settings));
+          setBookingAdvance(String(response.settings.booking_min_advance_minutes ?? 0));
+          setCancellationAdvance(String(response.settings.cancellation_min_advance_minutes ?? 0));
         }
       })
       .catch((caught: unknown) => {
@@ -78,6 +85,39 @@ export function AdminSettingsPage() {
       setSaveError(messageFrom(caught, 'Não foi possível salvar o horário de funcionamento.'));
     } finally {
       setPending(false);
+    }
+  }
+
+  async function onSavePolicy(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    if (policyPending) {
+      return;
+    }
+    const booking = advanceMinutes(bookingAdvance);
+    const cancellation = advanceMinutes(cancellationAdvance);
+    if (booking === null || cancellation === null) {
+      setPolicyError('Informe minutos inteiros entre 0 e 43200.');
+      setPolicyMessage(null);
+      return;
+    }
+
+    setPolicyPending(true);
+    setPolicyError(null);
+    setPolicyMessage(null);
+    try {
+      const response = await settingsService.update({
+        settings: {
+          booking_min_advance_minutes: booking,
+          cancellation_min_advance_minutes: cancellation,
+        },
+      });
+      setBookingAdvance(String(response.settings.booking_min_advance_minutes ?? booking));
+      setCancellationAdvance(String(response.settings.cancellation_min_advance_minutes ?? cancellation));
+      setPolicyMessage('Políticas de antecedência salvas.');
+    } catch (caught) {
+      setPolicyError(messageFrom(caught, 'Não foi possível salvar as políticas de antecedência.'));
+    } finally {
+      setPolicyPending(false);
     }
   }
 
@@ -179,8 +219,70 @@ export function AdminSettingsPage() {
           </button>
         </form>
       ) : null}
+
+      {!loading && !loadError ? (
+        <section className="mt-12 min-w-0 border-t border-line pt-10">
+          <h2 className="font-display text-3xl font-medium tracking-tight text-foreground">Antecedência</h2>
+          <p className="mt-3 max-w-xl text-sm text-muted">
+            0 minutos = sem antecedência mínima. O máximo é 43200 minutos, o equivalente a 30 dias. O cancelamento
+            vale só para o cliente.
+          </p>
+          <form className="mt-6 grid min-w-0 gap-4 md:grid-cols-2" onSubmit={(event) => void onSavePolicy(event)} noValidate>
+            <Field
+              label="Antecedência mínima para agendamento"
+              value={bookingAdvance}
+              onChange={(value) => {
+                setBookingAdvance(value);
+                setPolicyMessage(null);
+              }}
+              inputMode="numeric"
+            />
+            <Field
+              label="Antecedência mínima para cancelamento pelo cliente"
+              value={cancellationAdvance}
+              onChange={(value) => {
+                setCancellationAdvance(value);
+                setPolicyMessage(null);
+              }}
+              inputMode="numeric"
+            />
+            {policyError ? (
+              <p role="alert" className="text-sm text-foreground md:col-span-2">
+                {policyError}
+              </p>
+            ) : null}
+            {policyMessage ? (
+              <p role="status" className="text-sm text-foreground md:col-span-2">
+                {policyMessage}
+              </p>
+            ) : null}
+            <button
+              type="submit"
+              disabled={policyPending}
+              className="w-full max-w-full bg-accent px-4 py-3 text-[0.72rem] uppercase tracking-[0.28em] text-background disabled:opacity-60 md:col-span-2 md:w-fit"
+            >
+              {policyPending ? 'Salvando políticas' : 'Salvar políticas'}
+            </button>
+          </form>
+        </section>
+      ) : null}
     </SessionFrame>
   );
+}
+
+const ADVANCE_MINUTES = /^(0|[1-9]\d*)$/;
+const ADVANCE_MAX_MINUTES = 43_200;
+
+function advanceMinutes(value: string): number | null {
+  const trimmed = value.trim();
+  if (!ADVANCE_MINUTES.test(trimmed)) {
+    return null;
+  }
+  const minutes = Number(trimmed);
+  if (minutes > ADVANCE_MAX_MINUTES) {
+    return null;
+  }
+  return minutes;
 }
 
 function messageFrom(caught: unknown, fallback: string): string {

@@ -53,7 +53,7 @@ export class AppointmentsController {
     operationId: 'createAppointment',
     summary: 'Cria um agendamento confirmado para o cliente autenticado',
     description:
-      'Somente CLIENT, sempre para o próprio cliente. clientId, tenantId, status, preço, duração, pontos, redemptionPointsSnapshot e newBalance são rejeitados. bookingMode POINTS relê o serviço, trava a linha do cliente e a do profissional, e cria o agendamento junto com um REDEEM. Saldo insuficiente ou horário ocupado responde 409 e não grava nenhum dos dois. Idempotency-Key repetida não gera outro resgate. O preço em reais não é um pagamento.',
+      'Somente CLIENT, sempre para o próprio cliente. clientId, tenantId, status, preço, duração, pontos, redemptionPointsSnapshot e newBalance são rejeitados. bookingMode POINTS relê o serviço, trava a linha do cliente e a do profissional, e cria o agendamento junto com um REDEEM. Saldo insuficiente ou horário ocupado responde 409 e não grava nenhum dos dois. A antecedência mínima de agendamento é relida na transação: um início anterior a agora mais booking_min_advance_minutes responde 409, o mesmo conflito de horário indisponível. Idempotency-Key repetida não gera outro resgate. O preço em reais não é um pagamento.',
   })
   @ApiHeader({
     name: 'Idempotency-Key',
@@ -148,7 +148,7 @@ export class AppointmentsController {
     operationId: 'cancelAppointment',
     summary: 'Cancela um agendamento confirmado',
     description:
-      'CLIENT cancela o próprio. PROFESSIONAL cancela os vinculados a ele. ADMIN cancela no tenant. Só CONFIRMED pode ser cancelado. Se bookingMode for POINTS, a mesma transação cria um único REDEEM_REVERSAL com os pontos do resgate original. NO_SHOW não devolve pontos. Uma segunda chamada não devolve de novo.',
+      'CLIENT cancela o próprio. PROFESSIONAL cancela os vinculados a ele. ADMIN cancela no tenant. Só CONFIRMED pode ser cancelado. cancellation_min_advance_minutes, quando maior que zero, impede só o CLIENT de cancelar se o início for anterior a agora mais essa antecedência, em America/Sao_Paulo, e responde 409 sem alterar o agendamento nem o ledger. ADMIN e PROFESSIONAL não passam por essa antecedência. Se bookingMode for POINTS e o cancelamento for aceito, a mesma transação cria um único REDEEM_REVERSAL com os pontos do resgate original. NO_SHOW não devolve pontos. Uma segunda chamada não devolve de novo.',
   })
   @ApiOkResponse({ type: AppointmentResponseDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })

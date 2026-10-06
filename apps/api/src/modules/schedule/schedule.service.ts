@@ -23,10 +23,12 @@ import {
   SLOT_STEP_MINUTES,
   todayInScheduleZone,
 } from '../../common/time/schedule-clock';
+import { ScheduleNow } from '../../common/time/schedule-now';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { BOOKING_MIN_ADVANCE_KEY, readAdvanceMinutes } from '../settings/advance-policy';
 import { businessHoursDayKey, businessHoursError } from '../settings/business-hours';
 import type { TenantSettingKey } from '../settings/settings.constants';
-import { calculateAvailability, hasOverlap, type MinuteWindow } from './availability';
+import { applyBookingAdvance, calculateAvailability, hasOverlap, type MinuteWindow } from './availability';
 import type { AvailabilityQueryDto } from './dto/schedule.dto';
 import type {
   CreateScheduleExceptionDto,
@@ -169,7 +171,10 @@ function rangesTouch(left: MinuteWindow, right: MinuteWindow): boolean {
 
 @Injectable()
 export class ScheduleService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(ScheduleNow) private readonly clock: ScheduleNow,
+  ) {}
 
   async getOwnSchedule(actor: AuthUser): Promise<ProfessionalSchedule> {
     const professional = await this.requireOwn(actor);
@@ -331,7 +336,7 @@ export class ScheduleService {
       durationMinutes: service.durationMinutes,
       slots: [],
     };
-    if (date < todayInScheduleZone()) {
+    if (date < todayInScheduleZone(this.clock.now())) {
       return empty;
     }
 
@@ -381,7 +386,7 @@ export class ScheduleService {
       select: { startAt: true, endAt: true },
     });
 
-    return calculateAvailability({
+    const slots = calculateAvailability({
       date: input.date,
       durationMinutes: input.durationMinutes,
       stepMinutes: SLOT_STEP_MINUTES,
@@ -398,6 +403,8 @@ export class ScheduleService {
       occupied,
       establishment: await this.establishmentWindows(db, input.tenantId, input.date),
     });
+    const advance = await readAdvanceMinutes(db, input.tenantId, BOOKING_MIN_ADVANCE_KEY);
+    return applyBookingAdvance(input.date, slots, this.clock.now(), advance);
   }
 
   /**

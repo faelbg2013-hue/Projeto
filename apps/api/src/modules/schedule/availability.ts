@@ -1,4 +1,4 @@
-import { dayBounds, formatWallTime } from '../../common/time/schedule-clock';
+import { dayBounds, formatWallTime, parseScheduleInstant } from '../../common/time/schedule-clock';
 
 export interface MinuteWindow {
   start: number;
@@ -145,4 +145,17 @@ export function calculateAvailability(input: {
     windows = intersectWindows(windows, input.establishment);
   }
   return buildSlots(windows, input.durationMinutes, input.stepMinutes);
+}
+
+/**
+ * 0 preserva a grade atual, inclusive horários do dia que já passaram.
+ * Com minutos positivos, o início do slot precisa ser maior ou igual a agora + antecedência.
+ * O relógio não é arredondado para o passo de 15 minutos.
+ */
+export function applyBookingAdvance(date: string, slots: string[], now: Date, minutes: number): string[] {
+  if (minutes <= 0) {
+    return slots;
+  }
+  const earliest = now.getTime() + minutes * 60_000;
+  return slots.filter((slot) => parseScheduleInstant(`${date}T${slot}:00`).getTime() >= earliest);
 }
