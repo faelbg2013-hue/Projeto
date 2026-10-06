@@ -16,6 +16,7 @@ const emptyFilters: Filters = { date: '', professionalId: '', status: '' };
 
 const statusOptions: Array<{ value: Filters['status']; label: string }> = [
   { value: '', label: 'Todos' },
+  { value: 'PENDING', label: 'Pendentes' },
   { value: 'CONFIRMED', label: 'Confirmados' },
   { value: 'COMPLETED', label: 'Concluídos' },
   { value: 'CANCELLED', label: 'Cancelados' },
@@ -161,8 +162,14 @@ export function AdminDashboardPage() {
       {dashboard ? (
         <div className="mt-8 min-w-0 space-y-10">
           <p className="text-sm text-muted">Dia {civilDate(dashboard.date)}, em America/Sao_Paulo.</p>
+          <section aria-label="Estabelecimento" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Metric label="Clientes" value={String(dashboard.totals.clients)} />
+            <Metric label="Profissionais ativos" value={String(dashboard.totals.activeProfessionals)} />
+            <Metric label="Serviços ativos" value={String(dashboard.totals.activeServices)} />
+          </section>
           <section aria-label="Resumo do dia" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Metric label="Total de agendamentos" value={String(dashboard.summary.totalAppointments)} />
+            <Metric label="Atendimentos do dia" value={String(dashboard.summary.totalAppointments)} />
+            <Metric label="Pendentes" value={String(dashboard.summary.pending)} />
             <Metric label="Confirmados" value={String(dashboard.summary.confirmed)} />
             <Metric label="Concluídos" value={String(dashboard.summary.completed)} />
             <Metric label="Cancelados" value={String(dashboard.summary.cancelled)} />
@@ -178,7 +185,7 @@ export function AdminDashboardPage() {
           <section className="min-w-0">
             <h2 className="font-display text-3xl text-foreground">Próximos atendimentos</h2>
             {dashboard.upcoming.length === 0 ? (
-              <p className="mt-4 text-sm text-muted">Nenhum próximo atendimento neste dia.</p>
+              <p className="mt-4 text-sm text-muted">Nenhum próximo atendimento.</p>
             ) : (
               <div className="mt-4 space-y-4">
                 {dashboard.upcoming.map((item) => (
@@ -276,6 +283,7 @@ function DayCard({
     <article className="min-w-0 border border-line bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <h3 className="break-words text-lg text-foreground">
+          {points === 'upcoming' ? `${civilDate(item.date)} · ` : ''}
           {item.time} · {item.serviceName}
         </h3>
         <span className="shrink-0 text-[0.68rem] uppercase tracking-[0.22em] text-muted">
@@ -295,8 +303,8 @@ function DayCard({
             : '—'}
         </p>
       ) : null}
-      {points === 'upcoming' && item.bookingMode === 'POINTS' && item.redemptionPointsSnapshot != null ? (
-        <p className="mt-1 text-sm text-foreground">{item.redemptionPointsSnapshot} pontos</p>
+      {points === 'upcoming' ? (
+        <p className="mt-1 text-sm text-foreground">{item.bookingMode === 'POINTS' ? 'Pontos' : 'Normal'}</p>
       ) : null}
       {actions ? <div className="mt-4 flex flex-wrap gap-3">{actions}</div> : null}
     </article>

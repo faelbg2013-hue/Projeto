@@ -14,11 +14,22 @@ import {
   formatScheduleInstant,
   todayInScheduleZone,
 } from '../../common/time/schedule-clock';
+import { ScheduleNow } from '../../common/time/schedule-now';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import type { DashboardQueryDto } from './dto/dashboard.query';
 
+const appointmentInclude = {
+  client: { include: { user: { select: { name: true } } } },
+  professional: { select: { id: true, displayName: true } },
+  pointsTransactions: {
+    where: { type: { in: ['REDEEM', 'REDEEM_REVERSAL', 'EARN'] as const } },
+    select: { type: true, points: true },
+  },
+} satisfies Prisma.AppointmentInclude;
+
 const NOT_FOUND = 'Recurso não encontrado';
-const UPCOMING = new Set<AppointmentStatus>(['PENDING', 'CONFIRMED']);
+const UPCOMING_LIMIT = 5;
+const UPCOMING_STATUSES: AppointmentStatus[] = ['PENDING', 'CONFIRMED'];
 
 type DayRow = Prisma.AppointmentGetPayload<{
   include: {
@@ -30,7 +41,10 @@ type DayRow = Prisma.AppointmentGetPayload<{
 
 @Injectable()
 export class DashboardService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(ScheduleNow) private readonly clock: ScheduleNow,
+  ) {}
 
   async get(actor: AuthUser, query: DashboardQueryDto): Promise<OperationalDashboard> {
     const date = this.resolveDate(query.date);
@@ -54,11 +68,29 @@ export class DashboardService {
         },
       },
     });
+    const now = this.clock.now();
+    const [clients, activeProfessionals, activeServices, upcoming] = await Promise.all([
+      this.prisma.client.count({ where: { tenantId: actor.tenantId } }),
+      this.prisma.professional.count({ where: { tenantId: actor.tenantId, isActive: true } }),
+      this.prisma.service.count({ where: { tenantId: actor.tenantId, isActive: true } }),
+      this.prisma.appointment.findMany({
+        where: {
+          tenantId: actor.tenantId,
+          status: { in: UPCOMING_STATUSES },
+          startAt: { gt: now },
+          ...(query.professionalId ? { professionalId: query.professionalId } : {}),
+        },
+        orderBy: [{ startAt: 'asc' }, { id: 'asc' }],
+        take: UPCOMING_LIMIT,
+        include: appointmentInclude,
+      }),
+    ]);
     const listed = query.status ? rows.filter((row) => row.status === query.status) : rows;
     return {
       date,
       summary: summarize(rows),
-      upcoming: rows.filter((row) => UPCOMING.has(row.status)).map(toDashboardAppointment),
+      totals: { clients, activeProfessionals, activeServices },
+      upcoming: upcoming.map(toDashboardAppointment),
       appointments: listed.map(toDashboardAppointment),
       professionals: byProfessional(rows),
     };
@@ -66,7 +98,7 @@ export class DashboardService {
 
   private resolveDate(value: string | undefined): string {
     if (!value) {
-      return todayInScheduleZone();
+      return todayInScheduleZone(this.clock.now());
     }
     try {
       return assertIsoDate(value);
@@ -98,6 +130,7 @@ function summarize(rows: DayRow[]): OperationalDashboard['summary'] {
   );
   return {
     totalAppointments: rows.length,
+    pending: rows.filter((row) => row.status === 'PENDING').length,
     confirmed: rows.filter((row) => row.status === 'CONFIRMED').length,
     completed: rows.filter((row) => row.status === 'COMPLETED').length,
     cancelled: rows.filter((row) => row.status === 'CANCELLED').length,
@@ -112,6 +145,7 @@ function summarize(rows: DayRow[]): OperationalDashboard['summary'] {
 function toDashboardAppointment(row: DayRow): DashboardAppointment {
   return {
     id: row.id,
+    date: formatScheduleInstant(row.startAt).slice(0, 10),
     time: formatScheduleInstant(row.startAt).slice(11, 16),
     clientName: row.client.user.name,
     professionalName: row.professional.displayName,

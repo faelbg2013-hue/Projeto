@@ -220,6 +220,7 @@ export interface PointsAdjustmentResult {
 
 export interface DashboardSummary {
   totalAppointments: number;
+  pending: number;
   confirmed: number;
   completed: number;
   cancelled: number;
@@ -230,8 +231,18 @@ export interface DashboardSummary {
   pointsEarned: number;
 }
 
+/** Contagens do estabelecimento. Não dependem do dia nem do profissional filtrado. */
+export interface DashboardTotals {
+  /** Todos os clientes do tenant, ativos e inativos. */
+  clients: number;
+  activeProfessionals: number;
+  activeServices: number;
+}
+
 export interface DashboardAppointment {
   id: string;
+  /** Dia civil do início, em America/Sao_Paulo. */
+  date: string;
   time: string;
   clientName: string;
   professionalName: string;
@@ -256,6 +267,8 @@ export interface DashboardProfessional {
 export interface OperationalDashboard {
   date: string;
   summary: DashboardSummary;
+  totals: DashboardTotals;
+  /** Até cinco inícios futuros em PENDING ou CONFIRMED, do mais próximo ao mais distante. */
   upcoming: DashboardAppointment[];
   appointments: DashboardAppointment[];
   professionals: DashboardProfessional[];

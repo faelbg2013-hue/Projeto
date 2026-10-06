@@ -5,6 +5,7 @@ import type {
   DashboardAppointment,
   DashboardProfessional,
   DashboardSummary,
+  DashboardTotals,
   OperationalDashboard,
 } from '@ravion/types';
 
@@ -14,6 +15,9 @@ const MODES = ['NORMAL', 'POINTS'] as const;
 export class DashboardSummaryDto implements DashboardSummary {
   @ApiProperty({ type: Number, example: 10 })
   totalAppointments!: number;
+
+  @ApiProperty({ type: Number, example: 0, description: 'Agendamentos do dia ainda em PENDING.' })
+  pending!: number;
 
   @ApiProperty({ type: Number, example: 4 })
   confirmed!: number;
@@ -48,9 +52,27 @@ export class DashboardSummaryDto implements DashboardSummary {
   pointsEarned!: number;
 }
 
+export class DashboardTotalsDto implements DashboardTotals {
+  @ApiProperty({
+    type: Number,
+    example: 12,
+    description: 'Clientes do tenant, ativos e inativos. Não depende do dia filtrado.',
+  })
+  clients!: number;
+
+  @ApiProperty({ type: Number, example: 3, description: 'Profissionais com isActive verdadeiro.' })
+  activeProfessionals!: number;
+
+  @ApiProperty({ type: Number, example: 8, description: 'Serviços com isActive verdadeiro.' })
+  activeServices!: number;
+}
+
 export class DashboardAppointmentDto implements DashboardAppointment {
   @ApiProperty({ type: String, format: 'uuid' })
   id!: string;
+
+  @ApiProperty({ type: String, example: '2026-09-29', description: 'Dia civil do início em America/Sao_Paulo.' })
+  date!: string;
 
   @ApiProperty({ type: String, example: '15:00', description: 'Horário de parede em America/Sao_Paulo.' })
   time!: string;
@@ -115,7 +137,15 @@ export class DashboardResponseDto implements OperationalDashboard {
   @ApiProperty({ type: () => DashboardSummaryDto })
   summary!: DashboardSummaryDto;
 
-  @ApiProperty({ type: () => DashboardAppointmentDto, isArray: true })
+  @ApiProperty({ type: () => DashboardTotalsDto })
+  totals!: DashboardTotalsDto;
+
+  @ApiProperty({
+    type: () => DashboardAppointmentDto,
+    isArray: true,
+    description:
+      'Até cinco agendamentos com início posterior a agora e status PENDING ou CONFIRMED, do mais próximo ao mais distante. Cancelados, concluídos e não comparecimento ficam de fora. O filtro de status da lista do dia não altera esta lista.',
+  })
   upcoming!: DashboardAppointmentDto[];
 
   @ApiProperty({ type: () => DashboardAppointmentDto, isArray: true })

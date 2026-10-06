@@ -31,7 +31,7 @@ export class DashboardController {
     operationId: 'getAdminDashboard',
     summary: 'Resume a operação de um dia civil',
     description:
-      'Somente ADMIN. O tenant vem da sessão. A data é um dia civil em America/Sao_Paulo; se omitida, vale hoje nessa timezone. professionalId de outro tenant responde 404. O status filtra apenas a lista de atendimentos. O resumo soma priceSnapshot e os lançamentos REDEEM, REDEEM_REVERSAL e EARN ligados aos agendamentos do dia. O valor dos serviços não é pagamento.',
+      'Somente ADMIN. O tenant vem da sessão. A data é um dia civil em America/Sao_Paulo; se omitida, vale hoje nessa timezone. professionalId de outro tenant responde 404. O status filtra apenas a lista de atendimentos do dia. O resumo conta PENDING, CONFIRMED, COMPLETED, CANCELLED e NO_SHOW desse dia e soma priceSnapshot e os lançamentos REDEEM, REDEEM_REVERSAL e EARN ligados a eles. totals conta clientes do tenant e profissionais e serviços ativos, sem depender do dia. upcoming traz no máximo cinco inícios futuros em PENDING ou CONFIRMED. O valor dos serviços não é pagamento.',
   })
   @ApiQuery({ name: 'date', required: false, type: String, example: '2026-09-29' })
   @ApiQuery({ name: 'professionalId', required: false, type: String })
