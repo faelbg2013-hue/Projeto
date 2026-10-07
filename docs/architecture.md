@@ -127,7 +127,7 @@ O boot registra a porta e, quando ligada, a rota do Swagger. Cada requisição f
 
 O manifesto chama o aplicativo de Ravion Barber, com `display: standalone`, orientação livre e ícones para celular, tablet e desktop. O service worker faz precache do shell e não implementa fila offline, sincronização ou cache da API.
 
-A página inicial apresenta o nome e a frase "Sistema de gestão para barbearia.". Há também `/login`, `/register`, `/conta`, `/agendar`, `/agendamentos`, `/pontos`, `/profissional`, `/profissional/agenda`, `/profissional/agenda/semana`, `/profissional/agendamentos` e a administração em `/admin/dashboard`, `/admin/services`, `/admin/professionals`, `/admin/professionals/:id/schedule`, `/admin/clients`, `/admin/clients/:id/points` e `/admin/appointments`. `/profissional/agenda` é o dia operacional. `/profissional/agenda/semana` é o editor semanal. A camada `src/services` é o único lugar em que o PWA chama a API. O cliente de autenticação não guarda token no `localStorage`.
+A página inicial apresenta o nome e a frase "Sistema de gestão para barbearia.". Há também `/login`, `/register`, `/conta`, `/agendar`, `/agendamentos`, `/pontos`, `/profissional`, `/profissional/agenda`, `/profissional/agenda/semana`, `/profissional/agendamentos` e a administração em `/admin/dashboard`, `/admin/services`, `/admin/professionals`, `/admin/professionals/:id`, `/admin/professionals/:id/schedule`, `/admin/clients`, `/admin/clients/:id`, `/admin/clients/:id/points` e `/admin/appointments`. `/profissional/agenda` é o dia operacional. `/profissional/agenda/semana` é o editor semanal. A camada `src/services` é o único lugar em que o PWA chama a API. O cliente de autenticação não guarda token no `localStorage`.
 
 ## Banco
 

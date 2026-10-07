@@ -127,6 +127,55 @@ export interface ProfessionalProfile {
   user: OperationalUser;
 }
 
+export interface AdminProfessionalService {
+  name: string;
+  durationMinutes: number;
+  isActive: boolean;
+  price: string;
+}
+
+export interface AdminProfessionalInterval {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+}
+
+export interface AdminProfessionalAppointment {
+  date: string;
+  time: string;
+  clientName: string;
+  serviceName: string;
+  status: AppointmentStatus;
+  bookingMode: BookingMode;
+}
+
+export interface AdminProfessionalAppointmentSummary {
+  total: number;
+  today: number;
+  upcoming: number;
+  pending: number;
+  confirmed: number;
+  completed: number;
+  cancelled: number;
+  noShow: number;
+}
+
+/** Visão administrativa de um profissional. Serviços são o catálogo do tenant, sem vínculo individual. */
+export interface AdminProfessionalDetail {
+  displayName: string;
+  name: string;
+  email: string;
+  isActive: boolean;
+  createdAt: string;
+  services: AdminProfessionalService[];
+  week: AdminProfessionalInterval[];
+  appointments: {
+    summary: AdminProfessionalAppointmentSummary;
+    upcoming: AdminProfessionalAppointment[];
+    history: AdminProfessionalAppointment[];
+  };
+}
+
 export interface ServiceItem {
   id: string;
   tenantId: string;

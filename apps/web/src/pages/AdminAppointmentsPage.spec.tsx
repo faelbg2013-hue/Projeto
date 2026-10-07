@@ -227,6 +227,23 @@ describe('AdminAppointmentsPage', () => {
     });
   });
 
+  it('keeps a precise professional from the appointments url', async () => {
+    const professionalId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    renderPage(`/admin/appointments?professionalId=${professionalId}&page=2`);
+    await screen.findByText('Nenhum agendamento neste filtro.');
+    expect(screen.getByText(/A lista está restrita a um profissional/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver cadastro' })).toHaveAttribute(
+      'href',
+      `/admin/professionals/${professionalId}`,
+    );
+    expect(vi.mocked(appointmentsService.list).mock.calls.at(-1)?.[0]).toMatchObject({
+      professionalId,
+      page: 2,
+      pageSize: 20,
+    });
+    expect(screen.queryByText(professionalId)).not.toBeInTheDocument();
+  });
+
   it('keeps a precise client and drops it when the name search is used', async () => {
     const clientId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
     renderPage(`/admin/appointments?clientId=${clientId}&page=2`);

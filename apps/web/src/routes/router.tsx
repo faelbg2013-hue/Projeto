@@ -10,6 +10,7 @@ import { AgendaPage } from '../pages/AgendaPage';
 import { ProfessionalAgendaPage } from '../pages/ProfessionalAgendaPage';
 import { AdminClientDetailPage } from '../pages/AdminClientDetailPage';
 import { AdminClientsPage } from '../pages/AdminClientsPage';
+import { AdminProfessionalDetailPage } from '../pages/AdminProfessionalDetailPage';
 import { AdminProfessionalsPage } from '../pages/AdminProfessionalsPage';
 import { AdminServicesPage } from '../pages/AdminServicesPage';
 import { AdminSettingsPage } from '../pages/AdminSettingsPage';
@@ -60,6 +61,7 @@ export const appRoutes: RouteObject[] = [
               { path: 'admin/dashboard', element: <AdminDashboardPage /> },
               { path: 'admin/services', element: <AdminServicesPage /> },
               { path: 'admin/professionals', element: <AdminProfessionalsPage /> },
+              { path: 'admin/professionals/:professionalId', element: <AdminProfessionalDetailPage /> },
               { path: 'admin/appointments', element: <AdminAppointmentsPage /> },
               {
                 path: 'admin/professionals/:professionalId/schedule',

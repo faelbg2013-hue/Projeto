@@ -302,6 +302,14 @@ export function AdminAppointmentsPage() {
           </Link>
         </p>
       ) : null}
+      {applied.professionalId ? (
+        <p className="mt-3 text-sm text-muted">
+          A lista está restrita a um profissional.{' '}
+          <Link to={`/admin/professionals/${applied.professionalId}`} className="text-accent">
+            Ver cadastro
+          </Link>
+        </p>
+      ) : null}
       {loading && items.length === 0 ? <p className="mt-8 text-sm text-muted">Carregando agendamentos</p> : null}
       {error ? (
         <p role="alert" className="mt-6 text-sm text-foreground">

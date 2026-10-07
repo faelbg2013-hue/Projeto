@@ -12,6 +12,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -25,6 +26,7 @@ import {
 } from '@nestjs/swagger';
 import {
   UserRole,
+  type AdminProfessionalDetail,
   type AuthUser,
   type BookableProfessional,
   type Paginated,
@@ -32,10 +34,11 @@ import {
 } from '@ravion/types';
 import { CurrentUser } from '../../common/auth/current-user.decorator';
 import { Roles } from '../../common/auth/roles.decorator';
-import { ActiveListQueryDto } from '../../common/dto/active-list.query';
 import { PaginationQueryDto } from '../../common/dto/pagination.query';
 import { ApiErrorResponseDto } from '../../common/dto/api-error.response';
 import { bodyPipe, queryPipe } from '../../common/validation/body.pipe';
+import { AdminProfessionalQueryDto } from './dto/admin-professional.query';
+import { AdminProfessionalDetailDto } from './dto/admin-professional.response';
 import { CreateProfessionalDto } from './dto/create-professional.dto';
 import {
   PaginatedBookableProfessionalsDto,
@@ -91,17 +94,20 @@ export class ProfessionalsController {
   @ApiOperation({
     operationId: 'listProfessionals',
     summary: 'Lista os profissionais do tenant autenticado',
-    description: 'Somente ADMIN. A ordenação é createdAt descendente.',
+    description:
+      'Somente ADMIN. O tenant vem da sessão. search compara um trecho do nome de exibição, do nome da conta ou do e-mail. isActive filtra a situação existente. pageSize padrão 20, máximo 100. Ordenação por nome de exibição crescente e id crescente.',
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-  @ApiQuery({ name: 'pageSize', required: false, type: Number, example: 20 })
-  @ApiQuery({ name: 'isActive', required: false, type: Boolean })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number, example: 20, description: 'Padrão 20. Máximo 100.' })
+  @ApiQuery({ name: 'isActive', required: false, type: Boolean, description: 'Sem o parâmetro, ativos e inativos.' })
+  @ApiQuery({ name: 'search', required: false, type: String, example: 'rafael' })
   @ApiOkResponse({ type: PaginatedProfessionalsDto })
+  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
   @ApiForbiddenResponse({ type: ApiErrorResponseDto })
   list(
     @CurrentUser() actor: AuthUser,
-    @Query(queryPipe(ActiveListQueryDto)) query: ActiveListQueryDto,
+    @Query(queryPipe(AdminProfessionalQueryDto)) query: AdminProfessionalQueryDto,
   ): Promise<Paginated<ProfessionalProfile>> {
     return this.professionalsService.list(actor, query);
   }
@@ -124,6 +130,25 @@ export class ProfessionalsController {
     @Body(bodyPipe(CreateProfessionalDto)) body: CreateProfessionalDto,
   ): Promise<ProfessionalProfile> {
     return this.professionalsService.create(actor, body);
+  }
+
+  @Get(':id/overview')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    operationId: 'getAdminProfessionalOverview',
+    summary: 'Consulta a visão operacional de um profissional do tenant',
+    description:
+      'Somente ADMIN. Outro tenant ou profissional inexistente responde 404. PROFESSIONAL não consulta esta rota, mesmo o próprio registro. Serviços são o catálogo do tenant, sem vínculo individual. A jornada lista só intervalos ativos da agenda semanal. Hoje é o dia civil em America/Sao_Paulo. Próximos são até 5 PENDING ou CONFIRMED com início futuro. O histórico traz até 5 COMPLETED, CANCELLED ou NO_SHOW. Totais de status são o histórico do profissional. O nome do serviço nos atendimentos é o snapshot.',
+  })
+  @ApiOkResponse({ type: AdminProfessionalDetailDto })
+  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
+  @ApiForbiddenResponse({ type: ApiErrorResponseDto })
+  @ApiNotFoundResponse({ type: ApiErrorResponseDto })
+  overview(
+    @CurrentUser() actor: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<AdminProfessionalDetail> {
+    return this.professionalsService.overview(actor, id);
   }
 
   @Get(':id')

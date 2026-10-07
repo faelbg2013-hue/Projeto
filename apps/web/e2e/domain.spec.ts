@@ -118,7 +118,13 @@ test('admin creates, edits and deactivates a professional', async ({ page }, tes
   await page.getByLabel('E-mail').fill(email);
   await page.getByLabel('Senha').fill('senha-segura');
   await page.getByLabel('Nome de exibição').fill(displayName);
+  const created = page.waitForResponse(
+    (response) => response.url().includes('/api/v1/professionals') && response.request().method() === 'POST',
+  );
   await page.getByRole('button', { name: 'Criar profissional' }).click();
+  expect((await created).ok()).toBeTruthy();
+  await page.getByLabel('Busca').fill(email);
+  await page.getByRole('button', { name: 'Buscar' }).click();
 
   const card = page.getByRole('article').filter({ hasText: displayName });
   await expect(card).toBeVisible();
