@@ -1,8 +1,10 @@
 import { ValidationPipe, VersioningType, type INestApplication } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../app.module';
 import { GlobalExceptionFilter } from '../common/filters/global-exception.filter';
+import { applyTrustProxy } from '../common/security/trust-proxy';
 import { ScheduleNow } from '../common/time/schedule-now';
 
 export async function createTestApp(options?: { now?: () => Date }): Promise<INestApplication> {
@@ -16,6 +18,10 @@ export async function createTestApp(options?: { now?: () => Date }): Promise<INe
   const moduleRef = await builder.compile();
 
   const app = moduleRef.createNestApplication();
+  applyTrustProxy(
+    app.getHttpAdapter().getInstance(),
+    app.get(ConfigService).getOrThrow<false | number>('TRUST_PROXY'),
+  );
   app.use(cookieParser());
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });

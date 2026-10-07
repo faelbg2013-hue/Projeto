@@ -110,6 +110,9 @@ describe('authentication and tenant isolation', () => {
     ]);
     victimId = users[4]?.id ?? '';
     disposableId = users[3]?.id ?? '';
+    process.env.AUTH_LOGIN_LIMIT = '100';
+    process.env.AUTH_REGISTER_LIMIT = '20';
+    process.env.AUTH_REFRESH_LIMIT = '100';
     process.env.DEFAULT_PUBLIC_TENANT_ID = tenantA.id;
     const { createTestApp } = await import('../../test/create-test-app');
     app = await createTestApp();

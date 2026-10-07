@@ -5,6 +5,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { validateEnv } from '@ravion/validation';
 import { AuthGuard } from './common/auth/auth.guard';
 import { RolesGuard } from './common/auth/roles.guard';
+import { skipsAuthThrottle } from './common/security/auth-throttle';
 import { AppThrottlerGuard } from './common/security/app-throttler.guard';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
@@ -28,14 +29,36 @@ import { UsersModule } from './modules/users/users.module';
     }),
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        throttlers: [
-          {
-            ttl: config.getOrThrow<number>('THROTTLE_TTL_MS'),
-            limit: config.getOrThrow<number>('THROTTLE_LIMIT'),
-          },
-        ],
-      }),
+      useFactory: (config: ConfigService) => {
+        const authTtl = config.getOrThrow<number>('AUTH_THROTTLE_TTL_MS');
+        return {
+          throttlers: [
+            {
+              name: 'default',
+              ttl: config.getOrThrow<number>('THROTTLE_TTL_MS'),
+              limit: config.getOrThrow<number>('THROTTLE_LIMIT'),
+            },
+            {
+              name: 'login',
+              ttl: authTtl,
+              limit: config.getOrThrow<number>('AUTH_LOGIN_LIMIT'),
+              skipIf: skipsAuthThrottle('login'),
+            },
+            {
+              name: 'register',
+              ttl: authTtl,
+              limit: config.getOrThrow<number>('AUTH_REGISTER_LIMIT'),
+              skipIf: skipsAuthThrottle('register'),
+            },
+            {
+              name: 'refresh',
+              ttl: authTtl,
+              limit: config.getOrThrow<number>('AUTH_REFRESH_LIMIT'),
+              skipIf: skipsAuthThrottle('refresh'),
+            },
+          ],
+        };
+      },
     }),
     PrismaModule,
     AuthModule,

@@ -13,4 +13,14 @@ export class AppThrottlerGuard extends ThrottlerGuard {
 
     return super.shouldSkip(context);
   }
+
+  protected override async throwThrottlingException(
+    context: ExecutionContext,
+    detail: Parameters<ThrottlerGuard['throwThrottlingException']>[1],
+  ): Promise<void> {
+    const { res } = this.getRequestResponse(context);
+    const seconds = Math.max(1, Math.ceil(detail.timeToBlockExpire));
+    this.setResponseHeader(res, 'Retry-After', seconds);
+    await super.throwThrottlingException(context, detail);
+  }
 }

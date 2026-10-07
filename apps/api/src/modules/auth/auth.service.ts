@@ -28,6 +28,8 @@ export interface AuthSession {
   expiresIn: number;
 }
 
+export type DeliveredAuthSession = AuthSession | Pick<AuthSession, 'user' | 'expiresIn'>;
+
 @Injectable()
 export class AuthService {
   private readonly publicTenantId: string;
@@ -119,12 +121,42 @@ export class AuthService {
   }
 
   async refresh(rawRefreshToken: string): Promise<AuthSession> {
-    const session = await this.findUsableSession(rawRefreshToken);
-    await this.prisma.userSession.update({
-      where: { id: session.id },
-      data: { revokedAt: new Date() },
+    const refreshTokenHash = hashRefreshToken(rawRefreshToken);
+
+    return this.prisma.$transaction(async (tx) => {
+      const locked = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM user_sessions WHERE refreshTokenHash = ${refreshTokenHash} FOR UPDATE
+      `;
+      const sessionId = locked[0]?.id;
+      if (!sessionId) {
+        throw new UnauthorizedException(INVALID_SESSION);
+      }
+
+      const session = await tx.userSession.findUnique({
+        where: { id: sessionId },
+        include: { user: { include: { tenant: true } } },
+      });
+      if (
+        !session ||
+        session.revokedAt ||
+        session.expiresAt.getTime() <= Date.now() ||
+        !session.user.isActive ||
+        !session.user.tenant.isActive ||
+        session.tenantId !== session.user.tenantId
+      ) {
+        throw new UnauthorizedException(INVALID_SESSION);
+      }
+
+      const consumed = await tx.userSession.updateMany({
+        where: { id: session.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      if (consumed.count !== 1) {
+        throw new UnauthorizedException(INVALID_SESSION);
+      }
+
+      return this.openSession(session.user, tx);
     });
-    return this.openSession(session.user);
   }
 
   async logout(rawRefreshToken: string | undefined): Promise<void> {
@@ -148,30 +180,12 @@ export class AuthService {
     return toAuthUser(user);
   }
 
-  private async findUsableSession(rawRefreshToken: string): Promise<{
-    id: string;
-    user: User;
-  }> {
-    const session = await this.prisma.userSession.findUnique({
-      where: { refreshTokenHash: hashRefreshToken(rawRefreshToken) },
-      include: { user: { include: { tenant: true } } },
-    });
-    if (!session || session.expiresAt.getTime() <= Date.now() || session.revokedAt) {
-      throw new UnauthorizedException(INVALID_SESSION);
-    }
-    if (
-      !session.user.isActive ||
-      !session.user.tenant.isActive ||
-      session.tenantId !== session.user.tenantId
-    ) {
-      throw new UnauthorizedException(INVALID_SESSION);
-    }
-    return session;
-  }
-
-  private async openSession(user: User): Promise<AuthSession> {
+  private async openSession(
+    user: User,
+    db: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<AuthSession> {
     const refreshToken = createRefreshToken();
-    await this.prisma.userSession.create({
+    await db.userSession.create({
       data: {
         userId: user.id,
         tenantId: user.tenantId,

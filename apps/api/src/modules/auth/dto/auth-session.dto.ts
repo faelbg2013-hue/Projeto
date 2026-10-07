@@ -31,17 +31,19 @@ export class AuthSessionDto {
 
   @ApiProperty({
     type: String,
+    required: false,
     description:
-      'JWT de acesso. O PWA também o recebe em cookie HttpOnly e não deve persistir este campo.',
+      'JWT de acesso. Presente quando tokenDelivery é bearer, o padrão. Omitido quando o cliente pede cookie. O PWA não deve persistir este campo.',
   })
-  accessToken!: string;
+  accessToken?: string;
 
   @ApiProperty({
     type: String,
+    required: false,
     description:
-      'Refresh token opaco. O PWA também o recebe em cookie HttpOnly e não deve persistir este campo.',
+      'Refresh token opaco. Presente quando tokenDelivery é bearer, o padrão. Omitido quando o cliente pede cookie. O PWA não deve persistir este campo.',
   })
-  refreshToken!: string;
+  refreshToken?: string;
 
   @ApiProperty({
     type: Number,

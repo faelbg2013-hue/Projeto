@@ -67,8 +67,13 @@ O arquivo `.env` fica fora do Git. Os valores de `.env.example` são placeholder
 | `SEED_PROFESSIONAL_*`                           | Profissional de desenvolvimento. Não redefine senha existente       |
 | `CORS_ORIGINS`                                  | Origens permitidas, separadas por vírgula                           |
 | `SWAGGER_ENABLED`                               | `true` ou `false`. Sem valor, a UI fica ligada fora de produção     |
-| `THROTTLE_TTL_MS`                               | Janela do rate limit                                                |
-| `THROTTLE_LIMIT`                                | Requisições por janela                                              |
+| `THROTTLE_TTL_MS`                               | Janela do rate limit geral, em milissegundos. Padrão: `60000`       |
+| `THROTTLE_LIMIT`                                | Requisições por rota e IP nessa janela. Padrão: `120`               |
+| `AUTH_THROTTLE_TTL_MS`                          | Janela dos limites de login, cadastro e refresh, em milissegundos. Padrão: `60000` |
+| `AUTH_LOGIN_LIMIT`                              | Logins por IP na janela de auth. Padrão: `10`                       |
+| `AUTH_REGISTER_LIMIT`                           | Cadastros por IP na janela de auth. Padrão: `5`                     |
+| `AUTH_REFRESH_LIMIT`                            | Renovações por IP na janela de auth. Padrão: `30`                   |
+| `TRUST_PROXY`                                   | `false` ou `0` não confia em proxy. Inteiro positivo é o número de proxies confiáveis, como `1`. `true` é recusado |
 | `LOG_LEVEL`                                     | `error`, `warn`, `log`, `debug` ou `verbose`                        |
 | `VITE_API_URL`                                  | Vazio = mesma origem, a opção recomendada. Em desenvolvimento, a ausência usa o endereço local. O build de produção exige a variável e recusa localhost e HTTP absoluto |
 | `VITE_TENANT_SLUG`                              | Slug enviado pelo PWA só no login                                   |

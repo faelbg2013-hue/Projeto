@@ -15,8 +15,8 @@ export interface LoginInput {
 
 interface AuthSessionResponse {
   user: AuthUser;
-  accessToken: string;
-  refreshToken: string;
+  accessToken?: string;
+  refreshToken?: string;
   expiresIn: number;
 }
 
@@ -31,20 +31,27 @@ export interface AuthService {
 export function createAuthService(client: ApiClient, tenantSlug: string): AuthService {
   return {
     async register(input) {
-      const session = await client.post<AuthSessionResponse>('/api/v1/auth/register', input);
+      const session = await client.post<AuthSessionResponse>('/api/v1/auth/register', {
+        ...input,
+        tokenDelivery: 'cookie',
+      });
       return session.user;
     },
     async login(input) {
-      const session = await client.post<AuthSessionResponse>('/api/v1/auth/login', input, {
-        'X-Tenant-Slug': tenantSlug,
-      });
+      const session = await client.post<AuthSessionResponse>(
+        '/api/v1/auth/login',
+        { ...input, tokenDelivery: 'cookie' },
+        { 'X-Tenant-Slug': tenantSlug },
+      );
       return session.user;
     },
     async logout() {
       await client.post<void>('/api/v1/auth/logout', {});
     },
     async refresh() {
-      const session = await client.post<AuthSessionResponse>('/api/v1/auth/refresh', {});
+      const session = await client.post<AuthSessionResponse>('/api/v1/auth/refresh', {
+        tokenDelivery: 'cookie',
+      });
       return session.user;
     },
     async me() {

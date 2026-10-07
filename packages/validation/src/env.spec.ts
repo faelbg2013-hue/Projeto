@@ -81,6 +81,19 @@ describe('validateEnv', () => {
     }
   });
 
+  it('accepts an explicit proxy hop count and rejects unsafe proxy settings', () => {
+    expect(validateEnv(validEnv).TRUST_PROXY).toBe(false);
+    expect(validateEnv({ ...validEnv, TRUST_PROXY: 'false' }).TRUST_PROXY).toBe(false);
+    expect(validateEnv({ ...validEnv, TRUST_PROXY: '0' }).TRUST_PROXY).toBe(0);
+    expect(validateEnv({ ...validEnv, TRUST_PROXY: '1' }).TRUST_PROXY).toBe(1);
+    expect(validateEnv({ ...validEnv, TRUST_PROXY: '2' }).TRUST_PROXY).toBe(2);
+
+    expect(() => validateEnv({ ...validEnv, TRUST_PROXY: '-1' })).toThrow(/TRUST_PROXY/);
+    expect(() => validateEnv({ ...validEnv, TRUST_PROXY: 'true' })).toThrow(/TRUST_PROXY/);
+    expect(() => validateEnv({ ...validEnv, TRUST_PROXY: 'anywhere' })).toThrow(/TRUST_PROXY/);
+    expect(() => validateEnv({ ...validEnv, TRUST_PROXY: '1.5' })).toThrow(/TRUST_PROXY/);
+  });
+
   it('accepts the documented example file', () => {
     const raw = readFileSync(resolve(here, '../../../.env.example'), 'utf8');
     const parsed: Record<string, string> = {};

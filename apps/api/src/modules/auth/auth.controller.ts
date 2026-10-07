@@ -19,6 +19,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
@@ -33,8 +34,10 @@ import {
   type RequestWithUser,
 } from '../../common/auth/request-auth';
 import { ApiErrorResponseDto } from '../../common/dto/api-error.response';
+import { AuthThrottle } from '../../common/security/auth-throttle';
 import { bodyPipe } from '../../common/validation/body.pipe';
-import { AuthService, type AuthSession } from './auth.service';
+import { AuthService, type AuthSession, type DeliveredAuthSession } from './auth.service';
+import type { TokenDelivery } from './dto/token-delivery.dto';
 import { AuthSessionDto, AuthUserDto } from './dto/auth-session.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -57,6 +60,11 @@ export class AuthController {
 
   @Post('register')
   @Public()
+  @AuthThrottle('register')
+  @ApiTooManyRequestsResponse({
+    type: ApiErrorResponseDto,
+    description: 'Limite de cadastro excedido. A resposta inclui Retry-After, em segundos.',
+  })
   @ApiOperation({
     operationId: 'registerClient',
     summary: 'Cria um cliente no tenant público configurado no servidor',
@@ -68,16 +76,20 @@ export class AuthController {
   register(
     @Body(bodyPipe(RegisterDto)) body: RegisterDto,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<AuthSession> {
+  ): Promise<DeliveredAuthSession> {
     return this.authService.register(body).then((session) => {
-      this.attachCookies(response, session);
-      return session;
+      return this.finish(response, session, body.tokenDelivery);
     });
   }
 
   @Post('login')
   @Public()
+  @AuthThrottle('login')
   @HttpCode(200)
+  @ApiTooManyRequestsResponse({
+    type: ApiErrorResponseDto,
+    description: 'Limite de login excedido. A resposta inclui Retry-After, em segundos.',
+  })
   @ApiOperation({
     operationId: 'login',
     summary: 'Autentica um usuário dentro de um tenant',
@@ -96,23 +108,29 @@ export class AuthController {
     @Headers(TENANT_SLUG_HEADER) tenantSlug: string | undefined,
     @Body(bodyPipe(LoginDto)) body: LoginDto,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<AuthSession> {
+  ): Promise<DeliveredAuthSession> {
     const slug = tenantSlug?.trim();
     if (!slug) {
       throw new UnauthorizedException('Credenciais inválidas');
     }
     return this.authService.login({ ...body, tenantSlug: slug }).then((session) => {
-      this.attachCookies(response, session);
-      return session;
+      return this.finish(response, session, body.tokenDelivery);
     });
   }
 
   @Post('refresh')
   @Public()
+  @AuthThrottle('refresh')
   @HttpCode(200)
+  @ApiTooManyRequestsResponse({
+    type: ApiErrorResponseDto,
+    description: 'Limite de renovação excedido. A resposta inclui Retry-After, em segundos.',
+  })
   @ApiOperation({
     operationId: 'refreshSession',
     summary: 'Renova a sessão e revoga o refresh token anterior',
+    description:
+      'A rotação é atômica: o refresh atual só pode ser consumido uma vez. Um token já revogado ou expirado não cria outra sessão. Quando o limite é excedido, a resposta é 429 e traz Retry-After em segundos.',
   })
   @ApiOkResponse({ type: AuthSessionDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
@@ -120,14 +138,13 @@ export class AuthController {
     @Body(bodyPipe(RefreshTokenDto)) body: RefreshTokenDto,
     @Req() request: RequestWithUser,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<AuthSession> {
+  ): Promise<DeliveredAuthSession> {
     const refreshToken = readRefreshToken(request, body.refreshToken);
     if (!refreshToken) {
       throw new UnauthorizedException('Sessão inválida');
     }
     return this.authService.refresh(refreshToken).then((session) => {
-      this.attachCookies(response, session);
-      return session;
+      return this.finish(response, session, body.tokenDelivery);
     });
   }
 
@@ -157,6 +174,18 @@ export class AuthController {
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
   me(@CurrentUser() actor: AuthUser): Promise<AuthUser> {
     return this.authService.me(actor.id, actor.tenantId);
+  }
+
+  private finish(
+    response: Response,
+    session: AuthSession,
+    delivery: TokenDelivery | undefined,
+  ): DeliveredAuthSession {
+    this.attachCookies(response, session);
+    if (delivery === 'cookie') {
+      return { user: session.user, expiresIn: session.expiresIn };
+    }
+    return session;
   }
 
   private attachCookies(response: Response, session: AuthSession): void {

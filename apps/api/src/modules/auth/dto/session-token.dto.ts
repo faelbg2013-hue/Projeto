@@ -1,7 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, MinLength } from 'class-validator';
+import { TokenDeliveryDto } from './token-delivery.dto';
 
-export class RefreshTokenDto {
+export class RefreshTokenDto extends TokenDeliveryDto {
   @ApiPropertyOptional({
     type: String,
     description:

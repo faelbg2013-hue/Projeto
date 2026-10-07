@@ -67,9 +67,13 @@ Um corpo com `"tenantId": "outro-tenant"` não muda o contexto. Nas rotas de usu
 
 O banco guarda apenas o SHA-256 do refresh token, na tabela `user_sessions`, com usuário, tenant, expiração e revogação. A senha fica em Argon2id. `passwordHash` não sai nas respostas.
 
-`POST /api/v1/auth/refresh` valida token, sessão, expiração, revogação, usuário e tenant ativos. A sessão antiga é revogada e uma nova é emitida.
+`POST /api/v1/auth/refresh` valida token, sessão, expiração, revogação, usuário e tenant ativos. A sessão antiga é consumida e uma nova é emitida na mesma transação, com `SELECT ... FOR UPDATE` na linha do hash. Duas renovações simultâneas do mesmo token produzem uma sessão válida. O token antigo não cria outra. Não há família de tokens: detectar reuso além da revogação exigiria um campo novo e fica para uma fase futura.
 
-`POST /api/v1/auth/logout` revoga essa sessão. O mesmo refresh não cria outra. O access token curto pode continuar válido até expirar; a renovação não.
+`POST /api/v1/auth/logout` revoga essa sessão. O mesmo refresh não cria outra. O access token curto pode continuar válido até expirar; a renovação não. Não há blacklist de access JWT.
+
+Login, cadastro e refresh têm limite próprio por IP, além do limite geral por rota. Os padrões são 10, 5 e 30 requisições por `AUTH_THROTTLE_TTL_MS` (60 segundos). O excesso responde `429` com `Retry-After` em segundos. A mensagem de credencial inválida não muda.
+
+`TRUST_PROXY` fica `false` no desenvolvimento, então `X-Forwarded-For` não escolhe o IP. Em produção, atrás de um reverse proxy controlado, use `TRUST_PROXY=1`. O valor `true` é recusado. O rate limit usa o IP que o Express resolve, sem ler o header manualmente.
 
 `JWT_REFRESH_SECRET` continua obrigatório na configuração herdada da fundação. O refresh desta fase não é um JWT e não usa esse segredo. Em `NODE_ENV=production`, `JWT_SECRET` e `JWT_REFRESH_SECRET` precisam de um valor próprio: os placeholders do `.env.example` são recusados na subida da API. A aplicação não gera segredo automaticamente.
 
@@ -77,7 +81,7 @@ O banco guarda apenas o SHA-256 do refresh token, na tabela `user_sessions`, com
 
 O navegador fala com a API pela mesma origem. O Vite encaminha `/api` para `http://127.0.0.1:43111`. `VITE_API_URL` vazio é a configuração recomendada, inclusive em produção. Em desenvolvimento, a ausência da variável usa o endereço local. O build de produção não faz esse fallback: a variável precisa existir, vazia para a mesma origem ou com uma URL `https`. Localhost e HTTP absoluto são recusados.
 
-Os cookies são `HttpOnly`, `SameSite=Lax` e `Secure` apenas em produção. O access cookie vale para `/api`. O refresh cookie vale para `/api/v1/auth`. O PWA manda `credentials: 'include'` e não grava token em `localStorage`.
+Os cookies são `HttpOnly`, `SameSite=Lax` e `Secure` apenas em produção. O access cookie vale para `/api`. O refresh cookie vale para `/api/v1/auth`. O PWA manda `credentials: 'include'`, pede `tokenDelivery: "cookie"` e não grava token em `localStorage`. Nesse modo a API omite `accessToken` e `refreshToken` do JSON. Sem esse campo, ou com `bearer`, os tokens continuam no JSON para o cliente de API. Mutações seguem em POST com `SameSite=Lax`; esta fase não adiciona token CSRF.
 
 A camada `apps/web/src/services/auth.service.ts` concentra `register`, `login`, `logout`, `refresh` e `me`. Os componentes não chamam esses endpoints. O serviço devolve só o usuário, descartando os tokens do JSON. Se `GET /auth/me` responder `401`, ele tenta o refresh pelo cookie.
 
@@ -117,7 +121,7 @@ Resposta `200`:
 
 | Operação      | Chamada                                                     |
 | ------------- | ----------------------------------------------------------- |
-| Renovar       | `POST /api/v1/auth/refresh` com `{ "refreshToken": "..." }` |
+| Renovar       | `POST /api/v1/auth/refresh` com `{ "refreshToken": "..." }`. `tokenDelivery` pode ser omitido |
 | Encerrar      | `POST /api/v1/auth/logout` com o refresh atual              |
 | Usuário atual | `GET /api/v1/auth/me` com o bearer                          |
 | Cadastro      | `POST /api/v1/auth/register` sem tenant e sem papel         |

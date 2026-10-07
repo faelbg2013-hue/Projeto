@@ -1,8 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+import { TokenDeliveryDto } from './token-delivery.dto';
 
-export class RegisterDto {
+export class RegisterDto extends TokenDeliveryDto {
   @ApiProperty({ type: String, example: 'Ana Costa', minLength: 2, maxLength: 160 })
   @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()

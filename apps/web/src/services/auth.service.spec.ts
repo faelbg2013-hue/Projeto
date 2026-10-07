@@ -41,6 +41,11 @@ describe('createAuthService', () => {
       expect.objectContaining({
         credentials: 'include',
         headers: expect.objectContaining({ 'X-Tenant-Slug': 'web' }),
+        body: JSON.stringify({
+          email: user.email,
+          password: 'senha-segura',
+          tokenDelivery: 'cookie',
+        }),
       }),
     );
     setItem.mockRestore();

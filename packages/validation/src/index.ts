@@ -2,6 +2,23 @@ import { z } from 'zod';
 
 const logLevelSchema = z.enum(['error', 'warn', 'log', 'debug', 'verbose']);
 
+function parseTrustProxy(value: string | undefined, context: z.RefinementCtx): false | number {
+  if (value === undefined || value.trim() === '' || value.trim() === 'false') {
+    return false;
+  }
+
+  const raw = value.trim();
+  if (!/^[0-9]+$/.test(raw)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'TRUST_PROXY must be false or a non-negative integer',
+    });
+    return z.NEVER;
+  }
+
+  return Number(raw);
+}
+
 const PRODUCTION_SECRET_KEYS = ['JWT_SECRET', 'JWT_REFRESH_SECRET'] as const;
 
 /** Exact development placeholders. Production must not boot with these values. */
@@ -29,6 +46,14 @@ export const envSchema = z.object({
   SWAGGER_ENABLED: z.enum(['true', 'false']).optional(),
   THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60_000),
   THROTTLE_LIMIT: z.coerce.number().int().positive().default(120),
+  AUTH_THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60_000),
+  AUTH_LOGIN_LIMIT: z.coerce.number().int().positive().default(10),
+  AUTH_REGISTER_LIMIT: z.coerce.number().int().positive().default(5),
+  AUTH_REFRESH_LIMIT: z.coerce.number().int().positive().default(30),
+  TRUST_PROXY: z
+    .string()
+    .optional()
+    .transform((value, context): false | number => parseTrustProxy(value, context)),
   LOG_LEVEL: logLevelSchema.default('log'),
 }).superRefine((env, context) => {
   if (env.NODE_ENV !== 'production') {

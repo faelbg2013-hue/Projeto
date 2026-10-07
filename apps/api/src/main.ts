@@ -10,6 +10,7 @@ import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { redactSensitiveText } from './common/logger/redact';
 import { requestLogger } from './common/middleware/request-logger.middleware';
+import { applyTrustProxy } from './common/security/trust-proxy';
 import { loadEnvFiles } from './config/load-env';
 import { applyOpenApiConventions, buildSwaggerConfig, swaggerModels } from './config/swagger';
 
@@ -30,6 +31,11 @@ async function bootstrap(): Promise<void> {
     logger: ['error', 'warn', 'log'],
   });
   const config = app.get(ConfigService);
+  applyTrustProxy(
+    app.getHttpAdapter().getInstance(),
+    config.getOrThrow<false | number>('TRUST_PROXY'),
+  );
+
   const port = config.getOrThrow<number>('PORT');
   const nodeEnv = config.getOrThrow<string>('NODE_ENV');
   const logLevel = config.getOrThrow<LogLevel>('LOG_LEVEL');
