@@ -6,10 +6,12 @@ export function AppointmentCard({
   item,
   actions,
   showBookingMode = false,
+  showCommercialValue = false,
 }: {
   item: AppointmentItem;
   actions?: ReactNode;
   showBookingMode?: boolean;
+  showCommercialValue?: boolean;
 }) {
   return (
     <article className="min-w-0 border border-line bg-surface p-4">
@@ -25,8 +27,11 @@ export function AppointmentCard({
         {civilDate(item.date)} · {item.time}
       </p>
       <p className="mt-1 text-sm text-muted">
-        {item.durationMinutes} min · {money(item.price)}
+        {item.durationMinutes} min{showCommercialValue ? '' : ` · ${money(item.price)}`}
       </p>
+      {showCommercialValue ? (
+        <p className="mt-1 text-sm text-foreground">Valor do serviço {money(item.price)}</p>
+      ) : null}
       {showBookingMode ? (
         <p className="mt-1 text-sm text-foreground">{item.bookingMode === 'POINTS' ? 'Pontos' : 'Normal'}</p>
       ) : null}

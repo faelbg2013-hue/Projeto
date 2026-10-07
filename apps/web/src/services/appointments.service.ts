@@ -23,6 +23,8 @@ export interface AppointmentListQuery {
   serviceId?: string;
   startDate?: string;
   endDate?: string;
+  clientName?: string;
+  bookingMode?: 'NORMAL' | 'POINTS';
 }
 
 const client = new ApiClient(env.apiUrl);

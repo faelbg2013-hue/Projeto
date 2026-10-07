@@ -12,6 +12,7 @@ import { UserRole, type AppointmentItem, type AuthUser, type Paginated } from '@
 import { denyCrossTenant } from '../../common/auth/tenant-access';
 import { pageMeta, pageWindow } from '../../common/pagination';
 import {
+  addDays,
   assertIsoDate,
   dayBounds,
   formatScheduleInstant,
@@ -35,6 +36,11 @@ import type {
 } from './dto/appointment.dto';
 
 const NOT_FOUND = 'Recurso não encontrado';
+const ADMIN_RANGE_DAYS = 90;
+const RANGE_PAIR = 'Informe o início e o fim do período.';
+const RANGE_ORDER = 'A data inicial não pode ser posterior à data final.';
+const RANGE_LIMIT = 'O intervalo máximo da consulta é de 90 dias.';
+const RANGE_CONFLICT = 'Informe um dia ou um período, não os dois.';
 const PAST_DATE = 'Não é possível agendar em uma data passada.';
 const PAST_TIME = 'O horário já passou.';
 const TAKEN = 'Este horário não está mais disponível.';
@@ -340,6 +346,7 @@ export class AppointmentsService {
       await this.requireService(actor.tenantId, query.serviceId);
     }
     const range = this.adminRange(query);
+    const clientName = query.clientName?.trim();
     return this.listWhere(
       actor.tenantId,
       {
@@ -347,9 +354,12 @@ export class AppointmentsService {
         ...(query.clientId ? { clientId: query.clientId } : {}),
         ...(query.serviceId ? { serviceId: query.serviceId } : {}),
         ...(query.status ? { status: query.status } : {}),
+        ...(query.bookingMode ? { bookingMode: query.bookingMode } : {}),
+        ...(clientName ? { client: { user: { name: { contains: clientName } } } } : {}),
         ...(range ? { startAt: range } : {}),
       },
       query,
+      'desc',
     );
   }
 
@@ -487,6 +497,7 @@ export class AppointmentsService {
     tenantId: string,
     where: Prisma.AppointmentWhereInput,
     query: { page?: number; pageSize?: number },
+    order: 'asc' | 'desc' = 'asc',
   ): Promise<Paginated<AppointmentItem>> {
     const window = pageWindow(query);
     const scoped = { ...where, tenantId };
@@ -494,7 +505,7 @@ export class AppointmentsService {
       this.prisma.appointment.findMany({
         where: scoped,
         include: appointmentInclude,
-        orderBy: [{ startAt: 'asc' }, { id: 'asc' }],
+        orderBy: [{ startAt: order }, { id: order }],
         skip: window.skip,
         take: window.pageSize,
       }),
@@ -520,19 +531,41 @@ export class AppointmentsService {
     return { gte: bounds.startAt, lt: bounds.endAt };
   }
 
-  private adminRange(query: AdminAppointmentQueryDto): { gte?: Date; lt?: Date } | undefined {
-    if (query.date) {
-      return this.dateRange(query.date);
+  private adminRange(query: AdminAppointmentQueryDto): { gte: Date; lt: Date } | undefined {
+    const hasPeriod = Boolean(query.startDate || query.endDate);
+    if (query.date && hasPeriod) {
+      throw new BadRequestException(RANGE_CONFLICT);
     }
-    if (!query.startDate && !query.endDate) {
+    if (query.date) {
+      const day = this.dateRange(query.date);
+      if (!day) {
+        throw new BadRequestException('Data inválida.');
+      }
+      return day;
+    }
+    if (!hasPeriod) {
       return undefined;
     }
-    const start = query.startDate ? this.dateRange(query.startDate)?.gte : undefined;
-    const end = query.endDate ? this.dateRange(query.endDate)?.lt : undefined;
-    if (start && end && start >= end) {
-      throw new BadRequestException('Data inválida.');
+    if (!query.startDate || !query.endDate) {
+      throw new BadRequestException(RANGE_PAIR);
     }
-    return { ...(start ? { gte: start } : {}), ...(end ? { lt: end } : {}) };
+    const startDate = this.civilDate(query.startDate);
+    const endDate = this.civilDate(query.endDate);
+    if (startDate > endDate) {
+      throw new BadRequestException(RANGE_ORDER);
+    }
+    if (endDate > addDays(startDate, ADMIN_RANGE_DAYS - 1)) {
+      throw new BadRequestException(RANGE_LIMIT);
+    }
+    return { gte: dayBounds(startDate).startAt, lt: dayBounds(endDate).endAt };
+  }
+
+  private civilDate(value: string): string {
+    try {
+      return assertIsoDate(value);
+    } catch (error) {
+      clockError(error);
+    }
   }
 
   private async requireProfessional(tenantId: string, professionalId: string): Promise<void> {

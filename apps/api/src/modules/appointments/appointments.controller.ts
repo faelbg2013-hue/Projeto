@@ -104,17 +104,20 @@ export class AppointmentsController {
   @ApiOperation({
     operationId: 'listAppointments',
     summary: 'Lista os agendamentos do tenant autenticado',
-    description: 'Somente ADMIN. Filtros de outro tenant respondem 404. Ordenação por startAt ascendente.',
+    description:
+      'Somente ADMIN. O tenant vem da sessão. professionalId, clientId e serviceId de outro tenant respondem 404. serviceId é o serviço vinculado; o nome exibido permanece o snapshot. O período usa startAt em dias civis de America/Sao_Paulo, no máximo 90 dias, e exige início e fim. status aceita PENDING, CONFIRMED, COMPLETED, CANCELLED e NO_SHOW. bookingMode filtra NORMAL ou POINTS já gravados. clientName busca um trecho do nome no tenant. pageSize padrão 20, máximo 100. Ordenação por startAt descendente. O preço é o valor comercial do snapshot, não um pagamento.',
   })
   @ApiQuery({ name: 'professionalId', required: false, type: String })
   @ApiQuery({ name: 'clientId', required: false, type: String })
-  @ApiQuery({ name: 'serviceId', required: false, type: String })
+  @ApiQuery({ name: 'serviceId', required: false, type: String, description: 'Serviço vinculado. O nome da resposta é o snapshot.' })
   @ApiQuery({ name: 'date', required: false, type: String })
-  @ApiQuery({ name: 'startDate', required: false, type: String })
-  @ApiQuery({ name: 'endDate', required: false, type: String })
-  @ApiQuery({ name: 'status', required: false, type: String })
+  @ApiQuery({ name: 'startDate', required: false, type: String, description: 'Início inclusivo. Exige endDate. Máximo de 90 dias.' })
+  @ApiQuery({ name: 'endDate', required: false, type: String, description: 'Fim inclusivo. Exige startDate.' })
+  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'] })
+  @ApiQuery({ name: 'clientName', required: false, type: String })
+  @ApiQuery({ name: 'bookingMode', required: false, enum: ['NORMAL', 'POINTS'] })
   @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number, description: 'Padrão 20. Máximo 100.' })
   @ApiOkResponse({ type: PaginatedAppointmentsDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
   @ApiForbiddenResponse({ type: ApiErrorResponseDto })

@@ -27,7 +27,11 @@ export class AppointmentResponseDto implements AppointmentItem {
   @ApiProperty({ type: String, example: 'Corte', description: 'Nome do serviço no momento da criação.' })
   serviceName!: string;
 
-  @ApiProperty({ type: String, example: '40.00', description: 'Preço decimal no momento da criação.' })
+  @ApiProperty({
+    type: String,
+    example: '40.00',
+    description: 'Valor comercial registrado no agendamento. Não é pagamento.',
+  })
   price!: string;
 
   @ApiProperty({ type: Number, example: 30, description: 'Duração em minutos no momento da criação.' })

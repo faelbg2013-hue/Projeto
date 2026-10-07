@@ -80,17 +80,30 @@ export class AdminAppointmentQueryDto extends PaginationQueryDto {
   @IsUUID()
   serviceId?: string;
 
-  @ApiPropertyOptional({ type: String, example: '2026-10-05' })
+  @ApiPropertyOptional({
+    type: String,
+    example: '2026-10-05',
+    description: 'Um dia civil em America/Sao_Paulo, aplicado a startAt. Não combine com startDate ou endDate.',
+  })
   @IsOptional()
   @Matches(DATE)
   date?: string;
 
-  @ApiPropertyOptional({ type: String, example: '2026-10-01' })
+  @ApiPropertyOptional({
+    type: String,
+    example: '2026-10-01',
+    description:
+      'Início inclusivo do período, dia civil em America/Sao_Paulo, aplicado a startAt. Exige endDate. O intervalo máximo é de 90 dias.',
+  })
   @IsOptional()
   @Matches(DATE)
   startDate?: string;
 
-  @ApiPropertyOptional({ type: String, example: '2026-10-31' })
+  @ApiPropertyOptional({
+    type: String,
+    example: '2026-10-07',
+    description: 'Fim inclusivo do período, dia civil em America/Sao_Paulo, aplicado a startAt. Exige startDate.',
+  })
   @IsOptional()
   @Matches(DATE)
   endDate?: string;
@@ -99,4 +112,19 @@ export class AdminAppointmentQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsIn(STATUSES)
   status?: (typeof STATUSES)[number];
+
+  @ApiPropertyOptional({
+    type: String,
+    maxLength: 80,
+    description: 'Trecho do nome do cliente neste tenant. Não seleciona tenant e não exige carregar a lista de clientes.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  clientName?: string;
+
+  @ApiPropertyOptional({ type: String, enum: ['NORMAL', 'POINTS'], description: 'Modalidade gravada no agendamento.' })
+  @IsOptional()
+  @IsIn(['NORMAL', 'POINTS'])
+  bookingMode?: 'NORMAL' | 'POINTS';
 }

@@ -352,9 +352,10 @@ test('admin filters appointments and updates status', async ({ page, request }, 
   await page.goto('/admin/appointments');
   await expect(page.getByRole('heading', { name: 'Agendamentos' })).toBeVisible();
   await page.getByLabel('Profissional').selectOption({ label: displayName });
-  await page.getByLabel('Cliente').selectOption({ label: clientName });
+  await page.getByLabel('Cliente').fill(clientName);
   await page.getByLabel('Serviço').selectOption({ label: serviceName });
-  await page.getByLabel('Data').fill(date);
+  await page.getByLabel('Período inicial').fill(date);
+  await page.getByLabel('Período final').fill(date);
   await page.getByLabel('Status').selectOption({ label: 'Confirmado' });
   await page.getByRole('button', { name: 'Filtrar' }).click();
   const mine = page.getByRole('article').filter({ hasText: serviceName });
