@@ -16,6 +16,7 @@ export interface ServiceListQuery {
   page?: number;
   pageSize?: number;
   isActive?: boolean;
+  search?: string;
 }
 
 const client = new ApiClient(env.apiUrl);

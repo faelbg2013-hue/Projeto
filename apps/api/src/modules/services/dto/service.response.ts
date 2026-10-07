@@ -18,7 +18,8 @@ export class ServiceResponseDto implements ServiceItem {
   @ApiProperty({
     type: String,
     example: '45.00',
-    description: 'Preço decimal com duas casas. Não é um número de ponto flutuante.',
+    description:
+      'Valor comercial do serviço, com duas casas decimais. Não representa pagamento, cobrança ou receita.',
   })
   price!: string;
 

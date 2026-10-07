@@ -39,7 +39,13 @@ export class CreateServiceDto {
   @MaxLength(1000)
   description?: string | null;
 
-  @ApiProperty({ type: Number, example: 45, minimum: 0, maximum: 99999999.99 })
+  @ApiProperty({
+    type: Number,
+    example: 45,
+    minimum: 0,
+    maximum: 99999999.99,
+    description: 'Valor comercial de referência do serviço. Não representa pagamento, cobrança ou receita.',
+  })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)

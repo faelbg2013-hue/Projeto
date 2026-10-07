@@ -12,6 +12,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
@@ -26,9 +27,9 @@ import {
 import { UserRole, type AuthUser, type Paginated, type ServiceItem } from '@ravion/types';
 import { CurrentUser } from '../../common/auth/current-user.decorator';
 import { Roles } from '../../common/auth/roles.decorator';
-import { ActiveListQueryDto } from '../../common/dto/active-list.query';
 import { ApiErrorResponseDto } from '../../common/dto/api-error.response';
 import { bodyPipe, queryPipe } from '../../common/validation/body.pipe';
+import { AdminServiceQueryDto } from './dto/admin-service.query';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { PaginatedServicesDto, ServiceResponseDto } from './dto/service.response';
 import { UpdateServiceDto } from './dto/update-service.dto';
@@ -45,16 +46,18 @@ export class ServicesController {
     operationId: 'listServices',
     summary: 'Lista os serviços do tenant autenticado',
     description:
-      'CLIENT e PROFESSIONAL recebem somente serviços ativos. ADMIN pode omitir isActive para ver todos, ou filtrar ativos e inativos. A ordenação é createdAt descendente.',
+      'A mesma rota serve o catálogo operacional e a gestão. CLIENT e PROFESSIONAL recebem somente serviços ativos, ignoram search e continuam em createdAt descendente, para o agendamento não depender da paginação administrativa. ADMIN pode omitir isActive, filtrar ativos e inativos, e buscar um trecho do nome. Para o ADMIN, pageSize padrão 20, máximo 100, ordenação por nome e id. price é o valor comercial do serviço, não um pagamento. points é o ganho na conclusão. redemptionPoints null significa que o resgate não está disponível.',
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-  @ApiQuery({ name: 'pageSize', required: false, type: Number, example: 20 })
-  @ApiQuery({ name: 'isActive', required: false, type: Boolean })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number, example: 20, description: 'Padrão 20. Máximo 100.' })
+  @ApiQuery({ name: 'isActive', required: false, type: Boolean, description: 'ADMIN. Sem o parâmetro, ativos e inativos.' })
+  @ApiQuery({ name: 'search', required: false, type: String, example: 'corte' })
   @ApiOkResponse({ type: PaginatedServicesDto })
+  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
   list(
     @CurrentUser() actor: AuthUser,
-    @Query(queryPipe(ActiveListQueryDto)) query: ActiveListQueryDto,
+    @Query(queryPipe(AdminServiceQueryDto)) query: AdminServiceQueryDto,
   ): Promise<Paginated<ServiceItem>> {
     return this.servicesService.list(actor, query);
   }
@@ -66,7 +69,7 @@ export class ServicesController {
     operationId: 'createService',
     summary: 'Cria um serviço no tenant autenticado',
     description:
-      'Somente ADMIN. tenantId do corpo é rejeitado. O tenant vem da sessão. points é o ganho na conclusão. redemptionPoints é o custo do resgate e pode ser null.',
+      'Somente ADMIN. tenantId do corpo é rejeitado. O tenant vem da sessão. price é o valor comercial registrado, não um pagamento. points é o ganho na conclusão. redemptionPoints é o custo do resgate e pode ser null.',
   })
   @ApiBody({ type: CreateServiceDto })
   @ApiCreatedResponse({ type: ServiceResponseDto })

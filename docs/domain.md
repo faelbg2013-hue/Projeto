@@ -75,7 +75,7 @@ Campos: `id`, `tenantId`, `name`, `description`, `price`, `durationMinutes`, `po
 
 ## Listagem
 
-O contrato de paginação é o que o OpenAPI já publicava: `page` e `pageSize`, com envelope `{ data, meta }`. `meta` traz `page`, `pageSize`, `total` e `pageCount`. O padrão é página 1 e 20 itens, no máximo 100. Serviços continuam em `createdAt` descendente. A listagem administrativa de clientes ordena por nome e, no empate, por `id`. A de profissionais ordena por nome de exibição e, no empate, por `id`. Não há ordenação por campo arbitrário. Não existe vínculo entre profissional e serviço: o catálogo pertence ao tenant.
+O contrato de paginação é o que o OpenAPI já publicava: `page` e `pageSize`, com envelope `{ data, meta }`. `meta` traz `page`, `pageSize`, `total` e `pageCount`. O padrão é página 1 e 20 itens, no máximo 100. CLIENT e PROFESSIONAL listam serviços ativos em `createdAt` descendente e ignoram `search`. O ADMIN busca pelo nome, filtra `isActive` e ordena por nome e, no empate, por `id`. Clientes ordenam por nome e `id`. Profissionais ordenam por nome de exibição e `id`. Não há ordenação por campo arbitrário. Não existe vínculo entre profissional e serviço: o catálogo pertence ao tenant.
 
 ## Isolamento
 
@@ -86,7 +86,7 @@ Consulta, alteração e desativação de um registro de outro tenant respondem `
 - `/conta` mostra nome, e-mail, perfil e serviços ativos.
 - `/profissional` mostra nome de exibição, perfil, status e serviços ativos.
 - `/profissional/agenda` configura a semana, bloqueios, exceções e a consulta de disponibilidade do próprio profissional.
-- `/admin/services` faz a operação administrativa de serviços.
+- `/admin/services` busca, filtra e pagina o catálogo. O preço exibido é o valor comercial do serviço.
 - `/admin/professionals` lista, busca e pagina profissionais. `/admin/professionals/:id` reúne cadastro, catálogo do tenant, jornada semanal e atendimentos. `/admin/professionals/:id/schedule` continua sendo o editor da agenda.
 - `/admin/clients` lista e busca clientes. `/admin/clients/:id` reúne a visão operacional e `/admin/clients/:id/points` administra o ledger.
 

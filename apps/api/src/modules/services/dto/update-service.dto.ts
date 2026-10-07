@@ -36,7 +36,13 @@ export class UpdateServiceDto {
   @MaxLength(1000)
   description?: string | null;
 
-  @ApiPropertyOptional({ type: Number, example: 45, minimum: 0, maximum: 99999999.99 })
+  @ApiPropertyOptional({
+    type: Number,
+    example: 45,
+    minimum: 0,
+    maximum: 99999999.99,
+    description: 'Valor comercial de referência do serviço. Não representa pagamento, cobrança ou receita.',
+  })
   @Type(() => Number)
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })

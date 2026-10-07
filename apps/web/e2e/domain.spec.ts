@@ -87,19 +87,26 @@ test('admin creates, edits and deactivates a service', async ({ page }, testInfo
 
   await page.getByLabel('Nome').fill(serviceName);
   await page.getByLabel('Descrição').fill('Corte de verificação');
-  await page.getByLabel('Preço').fill('55');
+  await page.getByLabel('Valor do serviço').fill('55');
   await page.getByLabel('Duração em minutos').fill('40');
-  await page.getByLabel('Pontuação').fill('7');
+  await page.getByLabel('Pontos ao concluir').fill('7');
   await page.getByRole('button', { name: 'Criar serviço' }).click();
 
+  await page.getByLabel('Busca').fill(serviceName);
+  await page.getByRole('button', { name: 'Buscar' }).click();
   const card = page.getByRole('article').filter({ hasText: serviceName });
   await expect(card).toBeVisible();
   await expect(card.getByText('Ativo')).toBeVisible();
+  await expect(card.getByText('Duração 40 min')).toBeVisible();
+  await expect(card.getByText('Valor do serviço R$ 55,00')).toBeVisible();
+  await expect(card.getByText('Pontos ao concluir 7')).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
   await card.getByRole('button', { name: 'Editar' }).click();
   await page.getByLabel('Nome').fill(`${serviceName} editado`);
   await page.getByRole('button', { name: 'Salvar' }).click();
+  await page.getByLabel('Busca').fill(`${serviceName} editado`);
+  await page.getByRole('button', { name: 'Buscar' }).click();
   const edited = page.getByRole('article').filter({ hasText: `${serviceName} editado` });
   await expect(edited).toBeVisible();
 

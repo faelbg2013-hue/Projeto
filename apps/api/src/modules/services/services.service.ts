@@ -4,7 +4,7 @@ import { UserRole, type AuthUser, type Paginated, type ServiceItem } from '@ravi
 import { denyCrossTenant } from '../../common/auth/tenant-access';
 import { pageMeta, pageWindow } from '../../common/pagination';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
-import type { ActiveListQueryDto } from '../../common/dto/active-list.query';
+import type { AdminServiceQueryDto } from './dto/admin-service.query';
 import type { CreateServiceDto } from './dto/create-service.dto';
 import type { UpdateServiceDto } from './dto/update-service.dto';
 
@@ -30,17 +30,20 @@ function toService(service: Service): ServiceItem {
 export class ServicesService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  async list(actor: AuthUser, query: ActiveListQueryDto): Promise<Paginated<ServiceItem>> {
+  async list(actor: AuthUser, query: AdminServiceQueryDto): Promise<Paginated<ServiceItem>> {
     const window = pageWindow(query);
-    const isActive = actor.role === UserRole.ADMIN ? query.isActive : true;
+    const admin = actor.role === UserRole.ADMIN;
+    const isActive = admin ? query.isActive : true;
+    const search = admin ? query.search?.trim() : undefined;
     const where = {
       tenantId: actor.tenantId,
       ...(isActive === undefined ? {} : { isActive }),
+      ...(search ? { name: { contains: search } } : {}),
     };
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.service.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: admin ? [{ name: 'asc' }, { id: 'asc' }] : { createdAt: 'desc' },
         skip: window.skip,
         take: window.pageSize,
       }),
