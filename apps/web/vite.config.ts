@@ -36,6 +36,8 @@ export default defineConfig(({ command, mode }) => {
       : [
           VitePWA({
             registerType: 'autoUpdate',
+            // main.tsx already calls registerSW(). Null keeps that in the module graph and avoids an inline script.
+            injectRegister: null,
             includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png'],
             manifest: {
               id: '/',

@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { SwaggerModule } from '@nestjs/swagger';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { INestApplication } from '@nestjs/common';
+import { PrismaService } from '../infrastructure/prisma/prisma.service';
 import { HealthModule } from '../modules/health/health.module';
 import {
   API_DESCRIPTION,
@@ -24,7 +25,10 @@ describe('OpenAPI', () => {
 
     const moduleRef = await Test.createTestingModule({
       imports: [HealthModule],
-    }).compile();
+    })
+      .overrideProvider(PrismaService)
+      .useValue({ $queryRaw: async () => [{ ok: 1 }] })
+      .compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api');
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });

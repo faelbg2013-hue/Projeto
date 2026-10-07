@@ -74,7 +74,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message = 'Muitas requisições. Tente novamente em instantes.';
     }
 
-    if (this.isProduction && statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
+    if (this.isProduction && statusCode === HttpStatus.INTERNAL_SERVER_ERROR) {
       message = 'Erro interno do servidor';
     }
 

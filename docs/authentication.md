@@ -73,7 +73,7 @@ O banco guarda apenas o SHA-256 do refresh token, na tabela `user_sessions`, com
 
 Login, cadastro e refresh têm limite próprio por IP, além do limite geral por rota. Os padrões são 10, 5 e 30 requisições por `AUTH_THROTTLE_TTL_MS` (60 segundos). O excesso responde `429` com `Retry-After` em segundos. A mensagem de credencial inválida não muda.
 
-`TRUST_PROXY` fica `false` no desenvolvimento, então `X-Forwarded-For` não escolhe o IP. Em produção, atrás de um reverse proxy controlado, use `TRUST_PROXY=1`. O valor `true` é recusado. O rate limit usa o IP que o Express resolve, sem ler o header manualmente.
+`TRUST_PROXY` fica `false` no desenvolvimento, então `X-Forwarded-For` não escolhe o IP. No Compose de produção, o nginx deste repositório é o único proxy e o valor é `1`. Se um balanceador externo também encaminhar o cliente, use `2`. O valor `true` é recusado. O rate limit usa o IP que o Express resolve, sem ler o header manualmente. A topologia está em [production-operations.md](production-operations.md).
 
 `JWT_REFRESH_SECRET` continua obrigatório na configuração herdada da fundação. O refresh desta fase não é um JWT e não usa esse segredo. Em `NODE_ENV=production`, `JWT_SECRET` e `JWT_REFRESH_SECRET` precisam de um valor próprio: os placeholders do `.env.example` são recusados na subida da API. A aplicação não gera segredo automaticamente.
 

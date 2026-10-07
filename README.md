@@ -93,14 +93,16 @@ O Compose sobe um MySQL 8.4 e cria o database definido em `MYSQL_DATABASE` (padr
 pnpm db:down
 ```
 
-Aplique a migration e o seed idempotente:
+Em desenvolvimento, aplique a migration e o seed idempotente:
 
 ```bash
 pnpm db:migrate
 pnpm db:seed
 ```
 
-O seed cria o tenant, o administrador, um cliente, um profissional e os serviços Corte, Barba e Corte + Barba. Se o profissional de desenvolvimento ainda não tem agendamento, cria um confirmado na próxima segunda às 10:00. Rodar de novo não duplica e não redefine senha. Clientes do tenant de desenvolvimento que ainda não tinham perfil recebem um `Client`. A conexão também é validada na inicialização da API com `SELECT 1`. Com `NODE_ENV=production` o seed termina em erro antes de abrir o banco. As senhas do exemplo não servem para produção.
+`pnpm db:migrate` executa `prisma migrate dev` e fica restrito ao desenvolvimento. Produção e CI usam `pnpm db:migrate:deploy` (`prisma migrate deploy`). Não usar em produção `prisma migrate dev`, `prisma db push` nem `prisma migrate reset`.
+
+O seed cria o tenant, o administrador, um cliente, um profissional e os serviços Corte, Barba e Corte + Barba. Se o profissional de desenvolvimento ainda não tem agendamento, cria um confirmado na próxima segunda às 10:00. Rodar de novo não duplica e não redefine senha. Clientes do tenant de desenvolvimento que ainda não tinham perfil recebem um `Client`. A conexão também é validada na inicialização da API com `SELECT 1`. Com `NODE_ENV=production` o seed termina em erro antes de abrir o banco. As senhas do exemplo não servem para produção. O caminho de produção, backup e restore está em [docs/production-operations.md](docs/production-operations.md).
 
 ## Execução da API
 
@@ -108,7 +110,8 @@ O seed cria o tenant, o administrador, um cliente, um profissional e os serviço
 pnpm dev:api
 ```
 
-- Health: `GET http://127.0.0.1:43111/api/v1/health`
+- Liveness: `GET http://127.0.0.1:43111/api/v1/health/live` e o alias `GET /api/v1/health`
+- Readiness: `GET http://127.0.0.1:43111/api/v1/health/ready`
 - OpenAPI JSON: `http://127.0.0.1:43111/api/docs-json`
 - OpenAPI YAML: `http://127.0.0.1:43111/api/docs-yaml`
 - Swagger UI: `http://127.0.0.1:43111/api/docs`

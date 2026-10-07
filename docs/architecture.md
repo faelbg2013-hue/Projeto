@@ -32,7 +32,7 @@ packages/ui       Tokens visuais do PWA
 packages/types    Contratos TypeScript usados só por web e API
 packages/validation  Schemas runtime do monorepo TypeScript
 packages/config   tsconfig compartilhado
-docs              Arquitetura, autenticação e domínio
+docs              Arquitetura, autenticação, domínio e operação de produção
 prisma            Schema, migrations e seed de desenvolvimento
 ```
 
