@@ -143,6 +143,8 @@ test('admin deactivates a client from the same tenant', async ({ page, request }
 
   await login(page, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
   await page.goto('/admin/clients');
+  await page.getByLabel('Busca').fill(email);
+  await page.getByRole('button', { name: 'Buscar' }).click();
   const card = page.getByRole('article').filter({ hasText: email });
   await expect(card).toBeVisible();
   await expectNoHorizontalOverflow(page);

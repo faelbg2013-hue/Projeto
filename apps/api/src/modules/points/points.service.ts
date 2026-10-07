@@ -212,6 +212,24 @@ export class PointsService {
     return this.list(actor.tenantId, clientId, query);
   }
 
+  async recentLedger(
+    tenantId: string,
+    clientId: string,
+    take: number,
+  ): Promise<{ balance: number; recent: PointsTransactionItem[] }> {
+    const summary = await this.totals(this.prisma, tenantId, clientId);
+    const rows = await this.prisma.pointsTransaction.findMany({
+      where: { tenantId, clientId },
+      include: transactionInclude,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take,
+    });
+    return {
+      balance: summary.balance,
+      recent: rows.map((row) => toTransaction(row)),
+    };
+  }
+
   async adjust(actor: AuthUser, clientId: string, input: AdjustPointsDto): Promise<PointsAdjustmentResult> {
     const reason = input.reason.trim();
     if (!reason) {

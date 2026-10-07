@@ -227,6 +227,37 @@ describe('AdminAppointmentsPage', () => {
     });
   });
 
+  it('keeps a precise client and drops it when the name search is used', async () => {
+    const clientId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    renderPage(`/admin/appointments?clientId=${clientId}&page=2`);
+    await screen.findByText('Nenhum agendamento neste filtro.');
+    expect(screen.getByText(/A lista está restrita a um cliente/)).toBeInTheDocument();
+    expect(vi.mocked(appointmentsService.list).mock.calls.at(-1)?.[0]).toMatchObject({
+      clientId,
+      page: 2,
+      pageSize: 20,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filtrar' }));
+    await waitFor(() => {
+      expect(vi.mocked(appointmentsService.list).mock.calls.at(-1)?.[0]).toMatchObject({
+        clientId,
+        page: 1,
+        pageSize: 20,
+      });
+    });
+
+    fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'Ana' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Filtrar' }));
+    await waitFor(() => {
+      expect(vi.mocked(appointmentsService.list).mock.calls.at(-1)?.[0]).toMatchObject({
+        clientName: 'Ana',
+        page: 1,
+      });
+      expect(vi.mocked(appointmentsService.list).mock.calls.at(-1)?.[0]).not.toHaveProperty('clientId');
+    });
+  });
+
   it('clears the filters', async () => {
     renderPage('/admin/appointments?status=NO_SHOW&client=Ana&from=2026-10-01&to=2026-10-07');
     await screen.findByText('Nenhum agendamento neste filtro.');

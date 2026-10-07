@@ -1,4 +1,4 @@
-import type { ClientProfile, Paginated } from '@ravion/types';
+import type { AdminClientDetail, ClientProfile, Paginated } from '@ravion/types';
 import { env } from '../lib/env';
 import { ApiClient } from './api';
 import { withQuery } from './query';
@@ -7,6 +7,7 @@ export interface ClientListQuery {
   page?: number;
   pageSize?: number;
   isActive?: boolean;
+  search?: string;
 }
 
 const client = new ApiClient(env.apiUrl);
@@ -17,6 +18,9 @@ export const clientsService = {
   },
   list(query: ClientListQuery = {}): Promise<Paginated<ClientProfile>> {
     return client.get(withQuery('/api/v1/clients', query));
+  },
+  overview(id: string): Promise<AdminClientDetail> {
+    return client.get(`/api/v1/clients/${id}/overview`);
   },
   update(id: string, input: { isActive: boolean }): Promise<ClientProfile> {
     return client.patch(`/api/v1/clients/${id}`, input);

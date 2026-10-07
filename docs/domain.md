@@ -75,7 +75,7 @@ Campos: `id`, `tenantId`, `name`, `description`, `price`, `durationMinutes`, `po
 
 ## Listagem
 
-O contrato de paginação é o que o OpenAPI já publicava: `page` e `pageSize`, com envelope `{ data, meta }`. `meta` traz `page`, `pageSize`, `total` e `pageCount`. O padrão é página 1 e 20 itens, no máximo 100. A ordenação é `createdAt` descendente. Não há ordenação por campo arbitrário.
+O contrato de paginação é o que o OpenAPI já publicava: `page` e `pageSize`, com envelope `{ data, meta }`. `meta` traz `page`, `pageSize`, `total` e `pageCount`. O padrão é página 1 e 20 itens, no máximo 100. Profissionais e serviços continuam em `createdAt` descendente. A listagem administrativa de clientes ordena por nome e, no empate, por `id`. Não há ordenação por campo arbitrário.
 
 ## Isolamento
 

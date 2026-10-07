@@ -73,6 +73,49 @@ export interface ClientProfile {
   user: OperationalUser;
 }
 
+export interface AdminClientMovement {
+  type: PointsTransactionType;
+  points: number;
+  reason: string;
+  createdAt: string;
+}
+
+export interface AdminClientAppointment {
+  date: string;
+  time: string;
+  professionalName: string;
+  serviceName: string;
+  status: AppointmentStatus;
+  bookingMode: BookingMode;
+}
+
+export interface AdminClientAppointmentSummary {
+  total: number;
+  upcoming: number;
+  pending: number;
+  confirmed: number;
+  completed: number;
+  cancelled: number;
+  noShow: number;
+}
+
+/** Visão administrativa de um cliente. O saldo sai do ledger e não é um campo persistido. */
+export interface AdminClientDetail {
+  name: string;
+  email: string;
+  isActive: boolean;
+  createdAt: string;
+  points: {
+    balance: number;
+    recent: AdminClientMovement[];
+  };
+  appointments: {
+    summary: AdminClientAppointmentSummary;
+    upcoming: AdminClientAppointment[];
+    history: AdminClientAppointment[];
+  };
+}
+
 export interface ProfessionalProfile {
   id: string;
   tenantId: string;

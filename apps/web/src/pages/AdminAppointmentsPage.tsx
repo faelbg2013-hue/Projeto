@@ -1,6 +1,6 @@
 import type { AppointmentItem, AppointmentStatus, BookingMode, Paginated, ProfessionalProfile, ServiceItem } from '@ravion/types';
 import { useEffect, useState, type FormEvent } from 'react';
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { AppointmentCard } from '../components/AppointmentCard';
 import { SessionFrame, adminLinks } from '../components/SessionFrame';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -22,12 +22,15 @@ const modes: Array<{ value: BookingMode; label: string }> = [
   { value: 'POINTS', label: 'Pontos' },
 ];
 
+const CLIENT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 interface Filters {
   from: string;
   to: string;
   status: '' | AppointmentStatus;
   professionalId: string;
   client: string;
+  clientId: string;
   serviceId: string;
   bookingMode: '' | BookingMode;
   page: number;
@@ -53,6 +56,7 @@ function readFilters(params: URLSearchParams): Filters {
     status: isStatus(status) ? status : '',
     professionalId: params.get('professionalId') ?? '',
     client: params.get('client') ?? '',
+    clientId: CLIENT_ID.test(params.get('clientId') ?? '') ? (params.get('clientId') ?? '') : '',
     serviceId: params.get('serviceId') ?? '',
     bookingMode: isMode(bookingMode) ? bookingMode : '',
     page: Number.isInteger(page) && page > 0 ? page : 1,
@@ -75,6 +79,9 @@ function writeParams(filters: Filters): Record<string, string> {
   }
   if (filters.client.trim()) {
     next.client = filters.client.trim();
+  }
+  if (filters.clientId) {
+    next.clientId = filters.clientId;
   }
   if (filters.serviceId) {
     next.serviceId = filters.serviceId;
@@ -142,6 +149,7 @@ export function AdminAppointmentsPage() {
         ...(filters.to ? { endDate: filters.to } : {}),
         ...(filters.professionalId ? { professionalId: filters.professionalId } : {}),
         ...(filters.client.trim() ? { clientName: filters.client.trim() } : {}),
+        ...(filters.clientId ? { clientId: filters.clientId } : {}),
         ...(filters.serviceId ? { serviceId: filters.serviceId } : {}),
         ...(filters.status ? { status: filters.status } : {}),
         ...(filters.bookingMode ? { bookingMode: filters.bookingMode } : {}),
@@ -174,12 +182,14 @@ export function AdminAppointmentsPage() {
     const form = new FormData(event.currentTarget);
     const status = String(form.get('status') ?? '');
     const bookingMode = String(form.get('bookingMode') ?? '');
+    const client = String(form.get('client') ?? '');
     setParams(
       writeParams({
         from: String(form.get('from') ?? ''),
         to: String(form.get('to') ?? ''),
         professionalId: String(form.get('professionalId') ?? ''),
-        client: String(form.get('client') ?? ''),
+        client,
+        clientId: client.trim() ? '' : applied.clientId,
         serviceId: String(form.get('serviceId') ?? ''),
         status: isStatus(status) ? status : '',
         bookingMode: isMode(bookingMode) ? bookingMode : '',
@@ -284,6 +294,14 @@ export function AdminAppointmentsPage() {
         O período usa o dia civil em America/Sao_Paulo e aceita no máximo 90 dias. O valor do serviço é o registrado no
         agendamento.
       </p>
+      {applied.clientId ? (
+        <p className="mt-3 text-sm text-muted">
+          A lista está restrita a um cliente.{' '}
+          <Link to={`/admin/clients/${applied.clientId}`} className="text-accent">
+            Ver cadastro
+          </Link>
+        </p>
+      ) : null}
       {loading && items.length === 0 ? <p className="mt-8 text-sm text-muted">Carregando agendamentos</p> : null}
       {error ? (
         <p role="alert" className="mt-6 text-sm text-foreground">
