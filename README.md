@@ -55,8 +55,8 @@ O arquivo `.env` fica fora do Git. Os valores de `.env.example` são placeholder
 | `NODE_ENV`                                      | `development`, `test` ou `production`                               |
 | `PORT`                                          | Porta da API. Padrão local: `43111`                                 |
 | `DATABASE_URL`                                  | Conexão Prisma/MySQL                                                |
-| `JWT_SECRET`                                    | Segredo do access token JWT. Mínimo de 32 caracteres                |
-| `JWT_REFRESH_SECRET`                            | Segredo exigido no ambiente. O refresh atual é opaco e não é um JWT |
+| `JWT_SECRET`                                    | Segredo do access token. Mínimo de 32 caracteres. Em produção, o placeholder de desenvolvimento é recusado |
+| `JWT_REFRESH_SECRET`                            | Obrigatório. O refresh atual é opaco e não usa este segredo. Em produção, o placeholder também é recusado |
 | `JWT_ACCESS_EXPIRES_IN`                         | Duração do access token, como `15m`                                 |
 | `JWT_REFRESH_EXPIRES_IN`                        | Duração do refresh token, como `7d`                                 |
 | `DEFAULT_PUBLIC_TENANT_ID`                      | UUID do tenant usado no cadastro público                            |
@@ -70,7 +70,7 @@ O arquivo `.env` fica fora do Git. Os valores de `.env.example` são placeholder
 | `THROTTLE_TTL_MS`                               | Janela do rate limit                                                |
 | `THROTTLE_LIMIT`                                | Requisições por janela                                              |
 | `LOG_LEVEL`                                     | `error`, `warn`, `log`, `debug` ou `verbose`                        |
-| `VITE_API_URL`                                  | Vazio no PWA, para a sessão ir em cookie da mesma origem            |
+| `VITE_API_URL`                                  | Vazio = mesma origem, a opção recomendada. Em desenvolvimento, a ausência usa o endereço local. O build de produção exige a variável e recusa localhost e HTTP absoluto |
 | `VITE_TENANT_SLUG`                              | Slug enviado pelo PWA só no login                                   |
 | `MYSQL_*`                                       | Usuário, senha, database e porta do container                       |
 
@@ -95,7 +95,7 @@ pnpm db:migrate
 pnpm db:seed
 ```
 
-O seed cria o tenant, o administrador, um cliente, um profissional e os serviços Corte, Barba e Corte + Barba. Se o profissional de desenvolvimento ainda não tem agendamento, cria um confirmado na próxima segunda às 10:00. Rodar de novo não duplica e não redefine senha. Clientes do tenant de desenvolvimento que ainda não tinham perfil recebem um `Client`. A conexão também é validada na inicialização da API com `SELECT 1`.
+O seed cria o tenant, o administrador, um cliente, um profissional e os serviços Corte, Barba e Corte + Barba. Se o profissional de desenvolvimento ainda não tem agendamento, cria um confirmado na próxima segunda às 10:00. Rodar de novo não duplica e não redefine senha. Clientes do tenant de desenvolvimento que ainda não tinham perfil recebem um `Client`. A conexão também é validada na inicialização da API com `SELECT 1`. Com `NODE_ENV=production` o seed termina em erro antes de abrir o banco. As senhas do exemplo não servem para produção.
 
 ## Execução da API
 

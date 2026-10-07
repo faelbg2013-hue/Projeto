@@ -2,6 +2,14 @@ import { z } from 'zod';
 
 const logLevelSchema = z.enum(['error', 'warn', 'log', 'debug', 'verbose']);
 
+const PRODUCTION_SECRET_KEYS = ['JWT_SECRET', 'JWT_REFRESH_SECRET'] as const;
+
+/** Exact development placeholders. Production must not boot with these values. */
+const DEVELOPMENT_ONLY_SECRETS = new Set([
+  'dev-only-change-me-ravion-access-secret',
+  'dev-only-change-me-ravion-refresh-secret',
+]);
+
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(43111),
@@ -22,6 +30,20 @@ export const envSchema = z.object({
   THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60_000),
   THROTTLE_LIMIT: z.coerce.number().int().positive().default(120),
   LOG_LEVEL: logLevelSchema.default('log'),
+}).superRefine((env, context) => {
+  if (env.NODE_ENV !== 'production') {
+    return;
+  }
+
+  for (const key of PRODUCTION_SECRET_KEYS) {
+    if (DEVELOPMENT_ONLY_SECRETS.has(env[key])) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [key],
+        message: `${key} must be configured with a production-safe value`,
+      });
+    }
+  }
 });
 
 export type Env = z.infer<typeof envSchema>;

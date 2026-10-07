@@ -71,11 +71,11 @@ O banco guarda apenas o SHA-256 do refresh token, na tabela `user_sessions`, com
 
 `POST /api/v1/auth/logout` revoga essa sessão. O mesmo refresh não cria outra. O access token curto pode continuar válido até expirar; a renovação não.
 
-`JWT_REFRESH_SECRET` continua obrigatório na configuração herdada da fundação. O refresh desta fase não é um JWT e não usa esse segredo.
+`JWT_REFRESH_SECRET` continua obrigatório na configuração herdada da fundação. O refresh desta fase não é um JWT e não usa esse segredo. Em `NODE_ENV=production`, `JWT_SECRET` e `JWT_REFRESH_SECRET` precisam de um valor próprio: os placeholders do `.env.example` são recusados na subida da API. A aplicação não gera segredo automaticamente.
 
 ## PWA
 
-O navegador fala com a API pela mesma origem. O Vite encaminha `/api` para `http://127.0.0.1:43111`. `VITE_API_URL` fica vazio de propósito.
+O navegador fala com a API pela mesma origem. O Vite encaminha `/api` para `http://127.0.0.1:43111`. `VITE_API_URL` vazio é a configuração recomendada, inclusive em produção. Em desenvolvimento, a ausência da variável usa o endereço local. O build de produção não faz esse fallback: a variável precisa existir, vazia para a mesma origem ou com uma URL `https`. Localhost e HTTP absoluto são recusados.
 
 Os cookies são `HttpOnly`, `SameSite=Lax` e `Secure` apenas em produção. O access cookie vale para `/api`. O refresh cookie vale para `/api/v1/auth`. O PWA manda `credentials: 'include'` e não grava token em `localStorage`.
 

@@ -1,13 +1,6 @@
-const configuredUrl = import.meta.env.VITE_API_URL;
-
-function resolveApiUrl(value: string | undefined): string {
-  if (value === undefined) {
-    return 'http://127.0.0.1:43111';
-  }
-  return value.replace(/\/$/, '');
-}
+import { resolveApiUrl } from './api-url';
 
 export const env = {
-  apiUrl: resolveApiUrl(configuredUrl),
+  apiUrl: resolveApiUrl(import.meta.env.VITE_API_URL, import.meta.env.MODE),
   tenantSlug: import.meta.env.VITE_TENANT_SLUG || 'web',
 };

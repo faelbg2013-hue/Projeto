@@ -3,13 +3,31 @@ import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { themeColor, palette } from '@ravion/ui';
+import { loadEnv } from 'vite';
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
+import { resolveApiUrl } from './src/lib/api-url';
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
+const envDir = path.resolve(rootDir, '../..');
 
-export default defineConfig({
-  envDir: path.resolve(rootDir, '../..'),
+function assertProductionApiUrl(mode: string): void {
+  if (mode !== 'production') {
+    return;
+  }
+
+  const loaded = loadEnv(mode, envDir, 'VITE_');
+  const value = Object.hasOwn(loaded, 'VITE_API_URL') ? loaded.VITE_API_URL : undefined;
+  resolveApiUrl(value, mode);
+}
+
+export default defineConfig(({ command, mode }) => {
+  if (command === 'build') {
+    assertProductionApiUrl(mode);
+  }
+
+  return {
+  envDir,
   plugins: [
     react(),
     tailwindcss(),
@@ -94,4 +112,5 @@ export default defineConfig({
     setupFiles: './src/test/setup.ts',
     include: ['src/**/*.spec.ts', 'src/**/*.spec.tsx'],
   },
+};
 });

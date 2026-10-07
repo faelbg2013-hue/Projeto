@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { config as loadDotenv } from 'dotenv';
 import { PasswordService } from '../apps/api/src/common/auth/password.service';
+import { assertDevelopmentSeedAllowed } from '../apps/api/src/config/development-seed';
 import {
   addDays,
   nextOrSameDate,
@@ -20,6 +21,8 @@ function readEnv(name: string): string {
 }
 
 async function main(): Promise<void> {
+  assertDevelopmentSeedAllowed(process.env.NODE_ENV);
+
   const tenantId = readEnv('ADMIN_TENANT_ID');
   const tenantName = readEnv('TENANT_NAME');
   const tenantSlug = readEnv('TENANT_SLUG');

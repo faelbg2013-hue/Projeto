@@ -41,6 +41,46 @@ describe('validateEnv', () => {
     }
   });
 
+  it('accepts the current development placeholders and rejects them in production', () => {
+    expect(validateEnv({ ...validEnv, NODE_ENV: 'development' }).JWT_SECRET).toBe(validEnv.JWT_SECRET);
+    expect(validateEnv({ ...validEnv, NODE_ENV: 'test' }).JWT_REFRESH_SECRET).toBe(
+      validEnv.JWT_REFRESH_SECRET,
+    );
+
+    const access = 'production-access-secret-value-32chars';
+    const refresh = 'production-refresh-secret-value-32ch';
+    const production = validateEnv({
+      ...validEnv,
+      NODE_ENV: 'production',
+      JWT_SECRET: access,
+      JWT_REFRESH_SECRET: refresh,
+    });
+    expect(production.JWT_SECRET).toBe(access);
+    expect(production.JWT_REFRESH_SECRET).toBe(refresh);
+
+    expect(() =>
+      validateEnv({ ...validEnv, NODE_ENV: 'production', JWT_SECRET: validEnv.JWT_SECRET }),
+    ).toThrow(/JWT_SECRET must be configured with a production-safe value/);
+    expect(() =>
+      validateEnv({
+        ...validEnv,
+        NODE_ENV: 'production',
+        JWT_SECRET: access,
+        JWT_REFRESH_SECRET: validEnv.JWT_REFRESH_SECRET,
+      }),
+    ).toThrow(/JWT_REFRESH_SECRET must be configured with a production-safe value/);
+
+    expect(() => validateEnv({ ...validEnv, NODE_ENV: 'production' })).toThrow(/production-safe value/);
+    try {
+      validateEnv({ ...validEnv, NODE_ENV: 'production' });
+      throw new Error('production placeholders were accepted');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      expect(message).not.toContain(validEnv.JWT_SECRET);
+      expect(message).not.toContain(validEnv.JWT_REFRESH_SECRET);
+    }
+  });
+
   it('accepts the documented example file', () => {
     const raw = readFileSync(resolve(here, '../../../.env.example'), 'utf8');
     const parsed: Record<string, string> = {};
