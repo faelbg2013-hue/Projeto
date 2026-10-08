@@ -110,7 +110,12 @@ export default defineConfig(({ command, mode }) => {
     },
   },
   test: {
-    environment: 'jsdom',
+    environment: './src/test/jsdom-node-web.ts',
+    environmentOptions: {
+      jsdom: {
+        url: 'http://127.0.0.1:43110/',
+      },
+    },
     setupFiles: './src/test/setup.ts',
     include: ['src/**/*.spec.ts', 'src/**/*.spec.tsx'],
   },

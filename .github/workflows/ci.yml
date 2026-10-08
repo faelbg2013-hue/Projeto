@@ -75,10 +75,8 @@ jobs:
       - name: Test API
         run: pnpm --filter @ravion/api exec vitest run --no-file-parallelism
 
-      # auth-flow.spec.tsx fails on AbortSignal: React Router + undici versus jsdom.
-      # This is the only excluded frontend file. Do not broaden the exclude.
       - name: Test PWA
-        run: pnpm --filter @ravion/web exec vitest run --no-file-parallelism --exclude src/routes/auth-flow.spec.tsx
+        run: pnpm --filter @ravion/web exec vitest run --no-file-parallelism
 
       - name: Build
         run: pnpm build

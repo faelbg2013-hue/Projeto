@@ -32,6 +32,7 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
+    "admin:bootstrap": "pnpm --filter @ravion/api exec tsx ../../prisma/bootstrap.ts",
     "format": "prettier --write ."
   },
   "prisma": {

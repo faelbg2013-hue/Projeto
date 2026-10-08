@@ -2,6 +2,18 @@ import type { AuthUser } from '@ravion/types';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('../services/services.service', () => ({
+  servicesService: {
+    list: vi.fn(async () => ({
+      data: [],
+      meta: { page: 1, pageSize: 20, total: 0, pageCount: 0 },
+    })),
+    create: vi.fn(),
+    update: vi.fn(),
+    deactivate: vi.fn(),
+  },
+}));
 import { AuthProvider } from '../auth/auth-context';
 import { ApiClientError } from '../services/api';
 import type { AuthService } from '../services/auth.service';

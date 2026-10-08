@@ -25,7 +25,7 @@ navegador
 6. Verificar `GET /api/v1/health/ready`.
 7. Fazer o smoke test abaixo.
 
-Não executar `pnpm db:seed` em produção. O seed de desenvolvimento recusa `NODE_ENV=production` antes de abrir o banco. O primeiro tenant não é criado por este caminho.
+Não executar `pnpm db:seed` em produção. O seed de desenvolvimento recusa `NODE_ENV=production` antes de abrir o banco. O primeiro tenant e o primeiro administrador saem de `pnpm admin:bootstrap`, descrito abaixo. Esse comando não roda na subida da API, em migration nem no CI.
 
 ## Migrations
 
@@ -77,7 +77,30 @@ TLS no próprio nginx:
 docker compose -f docker-compose.production.yml -f docker-compose.production.tls.yml --profile tls up --build
 ```
 
-`TLS_CERT_DIR` aponta para um diretório externo com `fullchain.pem` e `privkey.pem`. Certificado e chave privada não entram no Git. Se o TLS terminar num balanceador à frente deste proxy, o listener público é o do balanceador, o HSTS fica lá, e este nginx HTTP não envia HSTS.
+`TLS_CERT_DIR` aponta para um diretório externo com `fullchain.pem` e `privkey.pem`. Certificado e chave privada não entram no Git nem nas imagens. O processo do nginx precisa ler os dois arquivos; permissão de leitura para o usuário do container é suficiente, e a chave não deve ser gravável por outros usuários. Se o TLS terminar num balanceador à frente deste proxy, o listener público é o do balanceador, o HSTS fica lá, e este nginx HTTP não envia HSTS.
+
+Para instalar um certificado real depois, coloque a cadeia e a chave nesse diretório e suba o perfil `tls`. A renovação troca os arquivos no mesmo caminho e recarrega o nginx (`nginx -s reload` no container do proxy TLS). Não há domínio nem certificado público nesta fase; um ensaio local pode usar um certificado autoassinado fora do repositório, aceito só pela ferramenta de teste (`curl --cacert`). Isso não homologa HTTPS público.
+
+Verificação quando houver HTTPS:
+
+- `https://dominio/` entrega o PWA e `https://dominio/api/...` entrega a API.
+- A resposta do PWA em HTTPS inclui HSTS, CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` e `Permissions-Policy`.
+- O cookie de acesso sai em `/api` e o de refresh em `/api/v1/auth`, ambos `HttpOnly`, `Secure` e `SameSite=Lax`.
+- `TRUST_PROXY=1` continua válido com um único proxy. Use `2` se outro balanceador também encaminhar o cliente. Não use `true`.
+
+## Bootstrap do primeiro administrador
+
+O comando é manual e só roda num terminal interativo, com acesso ao banco já migrado:
+
+```bash
+pnpm admin:bootstrap
+```
+
+Ele pergunta o nome do tenant, o slug, o nome e o e-mail do administrador, e a senha duas vezes, sem eco. Não aceita argumentos. A senha segue o cadastro existente: entre 8 e 72 caracteres. O hash é Argon2id, o mesmo da API. Tenant e administrador entram na mesma transação. Se o administrador não for gravado, o tenant não permanece.
+
+Uma segunda execução com o mesmo slug ou o mesmo e-mail falha e não troca senha, papel nem cria outro administrador. Um cliente existente não vira administrador. Não há rota HTTP para isso e o cadastro público continua criando apenas `CLIENT`.
+
+Confira o resultado com uma consulta ao banco, sem imprimir `passwordHash`: o tenant com o slug informado e um usuário `ADMIN` ativo nesse tenant. Se a transação falhar, rode de novo; nada parcial deve ter ficado. Não use este comando no CI e não coloque a senha em variável de ambiente, argumento ou log.
 
 ## HTTPS e headers do PWA
 
@@ -199,7 +222,7 @@ Pelo proxy:
 
 O job valida generate, validate, migrations, typecheck, lint, testes e build. O build do PWA grava `VITE_API_URL` vazio em `.env.production` dentro do runner.
 
-`src/routes/auth-flow.spec.tsx` fica de fora apenas desse job. A falha conhecida é `AbortSignal` entre React Router, undici e jsdom. Nenhum outro teste de frontend é excluído, e a suíte local continua incluindo esse arquivo.
+O job executa a suíte do PWA inteira, inclusive `src/routes/auth-flow.spec.tsx`. O ambiente de teste reaproveita o `AbortController` do Node para o `Request` do undici aceitar o sinal usado pelo React Router, e responde 404 na hora a pedidos que não são da API para a navegação não ficar esperando a rede.
 
 ## O que a imagem não faz
 
