@@ -42,7 +42,7 @@ Em produção, não usar:
 
 `migrate deploy` aplica as migrations já existentes. Não gera migration e não apaga dados. Há 7 migrations. Esta fase não adiciona outra.
 
-No Compose de produção, a migration roda num container de uso único, a partir do estágio de build da API, com o comando `prisma migrate deploy`. A imagem de runtime da API não migra na subida e não chama o seed.
+No Compose de produção, a migration roda num container de uso único, a partir da imagem de runtime da API, com `node node_modules/prisma/build/index.js migrate deploy`. Essa imagem contém o CLI do Prisma, o schema e as migrations, e não inclui o pnpm. A API não migra na própria subida e não chama o seed.
 
 ## Imagens
 

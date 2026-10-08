@@ -35,11 +35,12 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-      target: build
-    image: ravion-barber-migrate:local
+      target: runtime
+    image: ravion-barber-api:local
     container_name: ravion-prod-migrate
     restart: 'no'
-    entrypoint: ['pnpm', 'exec', 'prisma', 'migrate', 'deploy']
+    # The runtime image has the Prisma CLI, schema, and migrations. It does not include pnpm.
+    entrypoint: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']
     environment:
       DATABASE_URL: mysql://${MYSQL_USER:-ravion}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
       NODE_ENV: production

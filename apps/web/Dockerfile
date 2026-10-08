@@ -6,7 +6,7 @@ RUN corepack enable && corepack prepare pnpm@10.33.3 --activate
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/config/package.json packages/config/package.json
@@ -16,9 +16,10 @@ COPY packages/validation/package.json packages/validation/package.json
 COPY packages packages
 COPY apps/web apps/web
 
+RUN pnpm install --frozen-lockfile
+
 # Same origin. The file is created in the image build and is not a secret.
 RUN printf 'VITE_API_URL=\n' > .env.production \
-  && pnpm install --frozen-lockfile \
   && pnpm --filter @ravion/ui build \
   && pnpm --filter @ravion/types build \
   && pnpm --filter @ravion/web build

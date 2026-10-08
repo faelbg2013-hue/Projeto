@@ -11,7 +11,7 @@ RUN corepack enable && corepack prepare pnpm@10.33.3 --activate
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/config/package.json packages/config/package.json
@@ -25,12 +25,15 @@ COPY prisma prisma
 # Generate does not connect. This value is not a credential and is not copied to the runtime image.
 ENV DATABASE_URL=mysql://build:build@127.0.0.1:3306/build
 
-RUN pnpm install --frozen-lockfile \
-  && pnpm --filter @ravion/types build \
+RUN pnpm install --frozen-lockfile
+
+# pnpm 10 refuses deploy unless workspace packages are injected. --legacy keeps the
+# existing copy of built workspace packages into the runtime image.
+RUN pnpm --filter @ravion/types build \
   && pnpm --filter @ravion/validation build \
   && pnpm exec prisma generate \
   && pnpm --filter @ravion/api build \
-  && pnpm --filter @ravion/api deploy --prod /out \
+  && pnpm --filter @ravion/api deploy --prod --legacy /out \
   && mkdir -p /out/dist /out/node_modules/@ravion/types /out/node_modules/@ravion/validation \
   && cp -a apps/api/dist/. /out/dist/ \
   && rm -rf /out/node_modules/@ravion/types /out/node_modules/@ravion/validation \
