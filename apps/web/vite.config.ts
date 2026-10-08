@@ -118,6 +118,8 @@ export default defineConfig(({ command, mode }) => {
     },
     setupFiles: './src/test/setup.ts',
     include: ['src/**/*.spec.ts', 'src/**/*.spec.tsx'],
+    fileParallelism: false,
+    pool: 'forks',
   },
 };
 });

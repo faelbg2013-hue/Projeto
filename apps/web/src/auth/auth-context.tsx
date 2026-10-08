@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { AuthUser } from '@ravion/types';
 import {
   authService as defaultAuthService,
@@ -28,31 +28,32 @@ export function AuthProvider({
 }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<SessionStatus>('loading');
+  const session = useRef(0);
+  const established = useRef(false);
 
   useEffect(() => {
-    let active = true;
-    setStatus('loading');
+    const current = ++session.current;
+    if (!established.current) {
+      setStatus('loading');
+    }
     service
       .me()
       .then((next) => {
-        if (active) {
+        if (session.current === current) {
+          established.current = true;
           setUser(next);
         }
       })
       .catch(() => {
-        if (active) {
+        if (session.current === current && !established.current) {
           setUser(null);
         }
       })
       .finally(() => {
-        if (active) {
+        if (session.current === current) {
           setStatus('ready');
         }
       });
-
-    return () => {
-      active = false;
-    };
   }, [service]);
 
   const value = useMemo<AuthContextValue>(
@@ -60,18 +61,33 @@ export function AuthProvider({
       user,
       status,
       async login(input) {
+        const current = ++session.current;
         const next = await service.login(input);
-        setUser(next);
+        if (session.current === current) {
+          established.current = true;
+          setUser(next);
+          setStatus('ready');
+        }
         return next;
       },
       async register(input) {
+        const current = ++session.current;
         const next = await service.register(input);
-        setUser(next);
+        if (session.current === current) {
+          established.current = true;
+          setUser(next);
+          setStatus('ready');
+        }
         return next;
       },
       async logout() {
+        const current = ++session.current;
+        established.current = false;
         await service.logout();
-        setUser(null);
+        if (session.current === current) {
+          setUser(null);
+          setStatus('ready');
+        }
       },
     }),
     [service, status, user],

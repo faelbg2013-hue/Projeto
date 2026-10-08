@@ -1,5 +1,5 @@
 import type { AppointmentItem, AuthUser, Paginated, ServiceItem } from '@ravion/types';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '../auth/auth-context';
@@ -113,7 +113,9 @@ describe('ClientDashboardPage', () => {
     renderDashboard();
 
     expect(await screen.findByRole('heading', { name: 'Olá, Ana Costa' })).toBeInTheDocument();
-    expect(appointmentsService.mine).toHaveBeenCalledWith({ view: 'upcoming', pageSize: 1 });
+    await waitFor(() => {
+      expect(appointmentsService.mine).toHaveBeenCalledWith({ view: 'upcoming', pageSize: 1 });
+    });
     expect(pointsService.mine).toHaveBeenCalledWith();
     expect(servicesService.list).toHaveBeenCalledWith({ isActive: true, pageSize: 6 });
   });

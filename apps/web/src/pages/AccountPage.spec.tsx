@@ -1,5 +1,5 @@
 import type { AuthUser, ClientProfile } from '@ravion/types';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '../auth/auth-context';
@@ -93,6 +93,9 @@ describe('AccountPage', () => {
     expect(await screen.findByRole('heading', { name: 'Ana Costa' })).toBeInTheDocument();
     expect(screen.getByText('ana@example.com')).toBeInTheDocument();
     expect(screen.getByText('Cliente')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('Carregando conta')).not.toBeInTheDocument();
+    });
     expect(clientsService.me).toHaveBeenCalledTimes(1);
   });
 

@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../app.module';
 import { GlobalExceptionFilter } from '../common/filters/global-exception.filter';
+import { requestId } from '../common/http/request-id';
 import { applyTrustProxy } from '../common/security/trust-proxy';
 import { ScheduleNow } from '../common/time/schedule-now';
 
@@ -23,6 +24,7 @@ export async function createTestApp(options?: { now?: () => Date }): Promise<INe
     app.get(ConfigService).getOrThrow<false | number>('TRUST_PROXY'),
   );
   app.use(cookieParser());
+  app.use(requestId());
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   app.useGlobalPipes(

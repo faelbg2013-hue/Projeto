@@ -1,29 +1,76 @@
+import { lazy, type ComponentType } from 'react';
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import { RequireAuth } from '../auth/RequireAuth';
 import { RequireRole } from '../auth/RequireRole';
 import { RootLayout } from '../layouts/RootLayout';
-import { AccountPage } from '../pages/AccountPage';
-import { AdminAppointmentsPage } from '../pages/AdminAppointmentsPage';
-import { AdminDashboardPage } from '../pages/AdminDashboardPage';
-import { AdminClientPointsPage } from '../pages/AdminClientPointsPage';
-import { AgendaPage } from '../pages/AgendaPage';
-import { ProfessionalAgendaPage } from '../pages/ProfessionalAgendaPage';
-import { AdminClientDetailPage } from '../pages/AdminClientDetailPage';
-import { AdminClientsPage } from '../pages/AdminClientsPage';
-import { AdminProfessionalDetailPage } from '../pages/AdminProfessionalDetailPage';
-import { AdminProfessionalsPage } from '../pages/AdminProfessionalsPage';
-import { AdminServicesPage } from '../pages/AdminServicesPage';
-import { AdminSettingsPage } from '../pages/AdminSettingsPage';
-import { BookingPage } from '../pages/BookingPage';
-import { ClientDashboardPage } from '../pages/ClientDashboardPage';
 import { HomePage } from '../pages/HomePage';
 import { LoginPage } from '../pages/LoginPage';
-import { MyAppointmentsPage } from '../pages/MyAppointmentsPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
-import { PointsPage } from '../pages/PointsPage';
-import { ProfessionalAppointmentsPage } from '../pages/ProfessionalAppointmentsPage';
-import { ProfessionalPage } from '../pages/ProfessionalPage';
 import { RegisterPage } from '../pages/RegisterPage';
+
+const routeModules: Promise<unknown>[] = [];
+
+function lazyNamed(load: () => Promise<Record<string, unknown>>, name: string) {
+  const resolve = () =>
+    load().then((module) => {
+      const component = module[name];
+      if (typeof component !== 'function') {
+        throw new Error(`Página ${name} indisponível`);
+      }
+      return { default: component as ComponentType<Record<string, unknown>> };
+    });
+  if (import.meta.env.MODE === 'test') {
+    routeModules.push(resolve());
+  }
+  return lazy(resolve);
+}
+
+const AccountPage = lazyNamed(() => import('../pages/AccountPage'), 'AccountPage');
+const AdminAppointmentsPage = lazyNamed(
+  () => import('../pages/AdminAppointmentsPage'),
+  'AdminAppointmentsPage',
+);
+const AdminDashboardPage = lazyNamed(() => import('../pages/AdminDashboardPage'), 'AdminDashboardPage');
+const AdminClientPointsPage = lazyNamed(
+  () => import('../pages/AdminClientPointsPage'),
+  'AdminClientPointsPage',
+);
+const AgendaPage = lazyNamed(() => import('../pages/AgendaPage'), 'AgendaPage');
+const ProfessionalAgendaPage = lazyNamed(
+  () => import('../pages/ProfessionalAgendaPage'),
+  'ProfessionalAgendaPage',
+);
+const AdminClientDetailPage = lazyNamed(
+  () => import('../pages/AdminClientDetailPage'),
+  'AdminClientDetailPage',
+);
+const AdminClientsPage = lazyNamed(() => import('../pages/AdminClientsPage'), 'AdminClientsPage');
+const AdminProfessionalDetailPage = lazyNamed(
+  () => import('../pages/AdminProfessionalDetailPage'),
+  'AdminProfessionalDetailPage',
+);
+const AdminProfessionalsPage = lazyNamed(
+  () => import('../pages/AdminProfessionalsPage'),
+  'AdminProfessionalsPage',
+);
+const AdminServicesPage = lazyNamed(() => import('../pages/AdminServicesPage'), 'AdminServicesPage');
+const AdminSettingsPage = lazyNamed(() => import('../pages/AdminSettingsPage'), 'AdminSettingsPage');
+const BookingPage = lazyNamed(() => import('../pages/BookingPage'), 'BookingPage');
+const ClientDashboardPage = lazyNamed(
+  () => import('../pages/ClientDashboardPage'),
+  'ClientDashboardPage',
+);
+const MyAppointmentsPage = lazyNamed(() => import('../pages/MyAppointmentsPage'), 'MyAppointmentsPage');
+const PointsPage = lazyNamed(() => import('../pages/PointsPage'), 'PointsPage');
+const ProfessionalAppointmentsPage = lazyNamed(
+  () => import('../pages/ProfessionalAppointmentsPage'),
+  'ProfessionalAppointmentsPage',
+);
+const ProfessionalPage = lazyNamed(() => import('../pages/ProfessionalPage'), 'ProfessionalPage');
+
+if (import.meta.env.MODE === 'test') {
+  await Promise.all(routeModules);
+}
 
 export const appRoutes: RouteObject[] = [
   {
@@ -61,7 +108,10 @@ export const appRoutes: RouteObject[] = [
               { path: 'admin/dashboard', element: <AdminDashboardPage /> },
               { path: 'admin/services', element: <AdminServicesPage /> },
               { path: 'admin/professionals', element: <AdminProfessionalsPage /> },
-              { path: 'admin/professionals/:professionalId', element: <AdminProfessionalDetailPage /> },
+              {
+                path: 'admin/professionals/:professionalId',
+                element: <AdminProfessionalDetailPage />,
+              },
               { path: 'admin/appointments', element: <AdminAppointmentsPage /> },
               {
                 path: 'admin/professionals/:professionalId/schedule',

@@ -3,6 +3,8 @@ declare module 'jsdom' {
     close(): void;
     AbortController: typeof AbortController;
     AbortSignal: typeof AbortSignal;
+    MessageChannel: typeof MessageChannel;
+    MessagePort: typeof MessagePort;
     fetch: typeof fetch;
     Request: typeof Request;
     Response: typeof Response;

@@ -9,6 +9,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { redactSensitiveText } from './common/logger/redact';
+import { requestId } from './common/http/request-id';
 import { requestLogger } from './common/middleware/request-logger.middleware';
 import { applyTrustProxy } from './common/security/trust-proxy';
 import { loadEnvFiles } from './config/load-env';
@@ -61,8 +62,10 @@ async function bootstrap(): Promise<void> {
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Tenant-Slug'],
+    exposedHeaders: ['X-Request-Id'],
   });
   app.use(cookieParser());
+  app.use(requestId());
   app.use(requestLogger());
   app.setGlobalPrefix('api');
   app.enableVersioning({

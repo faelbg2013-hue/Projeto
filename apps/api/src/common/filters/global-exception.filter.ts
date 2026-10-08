@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import type { ApiErrorBody } from '@ravion/types';
+import { readRequestId } from '../http/request-id';
 import { redactSensitiveText } from '../logger/redact';
 
 @Catch()
@@ -23,8 +24,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const body = this.toErrorBody(exception);
 
     const internalMessage = exception instanceof Error ? exception.message : 'Unknown error';
+    const requestId = readRequestId(response);
     this.logger.error(
-      `${request.method} ${request.path} ${body.statusCode} ${redactSensitiveText(internalMessage)}`,
+      `${requestId} ${request.method} ${request.path} ${body.statusCode} ${redactSensitiveText(internalMessage)}`,
     );
 
     if (!(exception instanceof HttpException) && exception instanceof Error && exception.stack) {
