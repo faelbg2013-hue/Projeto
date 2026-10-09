@@ -62,10 +62,13 @@ Variáveis obrigatórias no shell, sem gravá-las no repositório:
 - `JWT_SECRET`
 - `JWT_REFRESH_SECRET`
 - `DEFAULT_PUBLIC_TENANT_ID`
+- `PUBLIC_ORIGIN`
+
+`PUBLIC_ORIGIN` é a origem pública do proxy, com esquema e host, sem caminho. O Compose não assume `localhost`. Um ensaio local informa o valor na sessão, por exemplo `http://127.0.0.1:8080`. A publicação real usa `https` no domínio do operador. Os nomes das variáveis, sem senha, estão em `deploy/env.production.example`.
 
 `TRUST_PROXY` padrão desse Compose é `1`: o nginx deste repositório é o único proxy entre o cliente e a API. Se um balanceador externo também encaminhar o endereço do cliente, use `TRUST_PROXY=2`. O valor não está fixo no código. `true` continua recusado. Senha com `@`, `:`, `/` ou `?` precisa ir codificada na `DATABASE_URL`.
 
-Subida local de validação, com segredos sintéticos só na sessão:
+Subida local de validação, com `PUBLIC_ORIGIN` e segredos sintéticos só na sessão:
 
 ```bash
 docker compose -f docker-compose.production.yml up --build
@@ -104,7 +107,7 @@ Confira o resultado com uma consulta ao banco, sem imprimir `passwordHash`: o te
 
 ## HTTPS e headers do PWA
 
-Produção pública usa HTTPS. O listener HTTP do Compose existe para verificação local e para o caso em que outro equipamento termina o TLS. HSTS só está em `deploy/nginx/proxy-tls.conf`.
+Produção pública usa HTTPS. O listener HTTP do Compose existe para verificação local e para o caso em que outro equipamento termina o TLS. HSTS só está em `deploy/nginx/proxy-tls.conf`. Esse arquivo não escuta a porta 80: o redirect de HTTP para HTTPS fica no equipamento que publica o domínio, na porta 443. Não exponha `HTTP_PORT` na internet quando o perfil `tls` estiver ativo. O checklist de publicação e o rollback estão em [launch-checklist.md](launch-checklist.md).
 
 O proxy aplica estes headers nas respostas do PWA, não nas da API. A API continua com Helmet.
 
@@ -143,6 +146,7 @@ Os três são públicos e ficam fora do rate limit. A resposta de sucesso é `{ 
 | `TRUST_PROXY` | Runtime da API | `false` no desenvolvimento. `1` com este proxy. `2` se houver outro hop |
 | `THROTTLE_TTL_MS`, `THROTTLE_LIMIT` | Runtime da API | Limite geral. Padrão `60000` e `120` |
 | `AUTH_THROTTLE_TTL_MS`, `AUTH_LOGIN_LIMIT`, `AUTH_REGISTER_LIMIT`, `AUTH_REFRESH_LIMIT` | Runtime da API | Limites de login, cadastro e refresh. Padrões `60000`, `10`, `5`, `30` |
+| `PUBLIC_ORIGIN` | Compose de produção | Origem do proxy. Obrigatória. Vira `CORS_ORIGINS`. Não tem padrão `localhost` |
 | `CORS_ORIGINS`, `SWAGGER_ENABLED`, `LOG_LEVEL` | Runtime da API | Origem pública, documentação desligada em produção, log |
 | `VITE_API_URL` | Build do PWA | Vazio para a mesma origem. Ausência, localhost e HTTP absoluto quebram o build de produção |
 | `VITE_TENANT_SLUG` | Build do PWA | Slug enviado no login |
