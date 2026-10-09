@@ -338,13 +338,15 @@ test('admin filters appointments and updates status', async ({ page, request }, 
   await page.getByLabel('Período final').fill(date);
   await page.getByLabel('Status').selectOption({ label: 'Confirmado' });
   await page.getByRole('button', { name: 'Filtrar' }).click();
+  await expect(page).toHaveURL(/[?&]status=CONFIRMED(?:&|$)/);
   const mine = page.getByRole('article').filter({ hasText: serviceName });
   await expect(mine.filter({ hasText: '16:00' })).toBeVisible();
   await page.getByLabel('Status').selectOption({ label: 'Todos' });
   await page.getByRole('button', { name: 'Filtrar' }).click();
+  await expect(page).not.toHaveURL(/[?&]status=/);
 
   const at1600 = mine.filter({ hasText: '16:00' });
-  await expect(at1600.getByText(serviceName)).toBeVisible();
+  await expect(at1600.getByRole('button', { name: 'Concluir' })).toBeVisible();
   await at1600.getByRole('button', { name: 'Concluir' }).click();
   await expect(at1600.getByText('Concluído')).toBeVisible();
 
