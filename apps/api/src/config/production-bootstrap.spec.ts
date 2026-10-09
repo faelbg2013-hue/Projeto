@@ -281,11 +281,21 @@ describe('bootstrap test database guard', () => {
   });
 
   it('rejects the integration database on the development port without GitHub Actions', () => {
-    expect(() =>
-      resolveBootstrapTestTarget(
-        'mysql://ravion_ci:secret@127.0.0.1:3306/ravion_integration_test',
-      ),
-    ).toThrow('recusou');
+    const previous = process.env.GITHUB_ACTIONS;
+    delete process.env.GITHUB_ACTIONS;
+    try {
+      expect(() =>
+        resolveBootstrapTestTarget(
+          'mysql://ravion_ci:secret@127.0.0.1:3306/ravion_integration_test',
+        ),
+      ).toThrow('recusou');
+    } finally {
+      if (previous === undefined) {
+        delete process.env.GITHUB_ACTIONS;
+      } else {
+        process.env.GITHUB_ACTIONS = previous;
+      }
+    }
   });
 
   it('rejects an unknown database even when CI is set', () => {
