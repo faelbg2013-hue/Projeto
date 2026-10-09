@@ -1,27 +1,7 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { e2eAdminEmail, e2eAdminPassword, e2eApiOrigin, e2eTenantSlug } from './target';
 
-const apiOrigin = 'http://127.0.0.1:43111';
-
-function envValue(name: string): string {
-  const fromProcess = process.env[name]?.trim();
-  if (fromProcess) {
-    return fromProcess;
-  }
-  const text = readFileSync(fileURLToPath(new URL('../../../.env', import.meta.url)), 'utf8');
-  for (const line of text.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) {
-      continue;
-    }
-    const separator = trimmed.indexOf('=');
-    if (trimmed.slice(0, separator) === name) {
-      return trimmed.slice(separator + 1).trim();
-    }
-  }
-  throw new Error(`Variável ausente: ${name}`);
-}
+const apiOrigin = e2eApiOrigin;
 
 function nextWeekday(weekday: number): string {
   const today = new Intl.DateTimeFormat('en-CA', {
@@ -58,7 +38,7 @@ async function login(page: Page, email: string, password: string): Promise<void>
 
 async function apiToken(request: APIRequestContext, email: string, password: string): Promise<string> {
   const response = await request.post(`${apiOrigin}/api/v1/auth/login`, {
-    headers: { 'X-Tenant-Slug': envValue('TENANT_SLUG') },
+    headers: { 'X-Tenant-Slug': e2eTenantSlug },
     data: { email, password },
   });
   expect(response.status()).toBe(200);
@@ -84,7 +64,7 @@ test('client sees the earned balance and statement and cannot open admin points'
   page,
   request,
 }, testInfo) => {
-  const adminToken = await apiToken(request, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  const adminToken = await apiToken(request, e2eAdminEmail, e2eAdminPassword);
   const stamp = `${testInfo.project.name}-${Date.now()}`;
   const serviceName = `Corte pontos ${stamp}`;
   const clientEmail = `e2e-pontos-cliente-${stamp}@example.com`;
@@ -166,7 +146,7 @@ test('admin credits and debits with a debit preview', async ({ page, request }, 
   expect(profile.status()).toBe(200);
   const client = (await profile.json()) as { id: string };
 
-  await login(page, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  await login(page, e2eAdminEmail, e2eAdminPassword);
   await page.goto(`/admin/clients/${client.id}/points`);
   await expect(page.getByRole('heading', { name: 'Pontos' })).toBeVisible();
   await expect(page.locator('p').filter({ hasText: 'Saldo atual' })).toContainText('0');
@@ -201,7 +181,7 @@ test('admin credits and debits with a debit preview', async ({ page, request }, 
 test('professional cannot open the points administration', async ({ page, request }, testInfo) => {
   const stamp = `${testInfo.project.name}-${Date.now()}`;
   const email = `e2e-pro-pontos-${stamp}@example.com`;
-  const token = await apiToken(request, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  const token = await apiToken(request, e2eAdminEmail, e2eAdminPassword);
   const created = await request.post(`${apiOrigin}/api/v1/professionals`, {
     headers: { Authorization: `Bearer ${token}` },
     data: {
@@ -225,7 +205,7 @@ test('client books with points, the professional sees the redemption, and cancel
   page,
   request,
 }, testInfo) => {
-  const adminToken = await apiToken(request, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  const adminToken = await apiToken(request, e2eAdminEmail, e2eAdminPassword);
   const stamp = `${testInfo.project.name}-${Date.now()}`;
   const serviceName = `Corte resgate ${stamp}`;
   const displayName = `! Barbeiro ${stamp}`;
@@ -272,7 +252,7 @@ test('client books with points, the professional sees the redemption, and cancel
   await page.getByLabel('Data').fill(date);
   await expect(page.getByRole('list', { name: 'Horários disponíveis' })).toBeVisible();
   await page.getByRole('list', { name: 'Horários disponíveis' }).getByRole('button', { name: '10:00' }).click();
-  await expect(page.getByText('Saldo atual').locator('..')).toContainText('80 pontos');
+  await expect(page.getByText('80 pontos', { exact: true })).toBeVisible();
   await page.getByRole('radio', { name: 'Usar 50 pontos' }).check();
   await expect(page.getByText('50 pontos serão utilizados no momento do agendamento.')).toBeVisible();
   await page.getByRole('button', { name: 'Confirmar agendamento' }).click();

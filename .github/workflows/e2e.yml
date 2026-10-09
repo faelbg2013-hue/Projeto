@@ -1,0 +1,91 @@
+# Disparo manual. Push e pull request não executam esta matriz.
+name: e2e
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  playwright:
+    name: ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - width-360
+          - width-390
+          - width-768
+          - width-1024
+          - width-1440
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: ravion_e2e_root_local
+          MYSQL_DATABASE: ravion_e2e
+          MYSQL_USER: ravion_e2e
+          MYSQL_PASSWORD: ravion_e2e_local_only
+        ports:
+          - 33116:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot --password=$MYSQL_ROOT_PASSWORD"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+          --health-start-period=30s
+    env:
+      E2E_PLAYWRIGHT_PROJECT: ${{ matrix.project }}
+      GITHUB_ACTIONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace packages
+        run: pnpm --filter @ravion/types build && pnpm --filter @ravion/validation build && pnpm --filter @ravion/ui build
+
+      - name: Prisma generate
+        run: pnpm prisma:generate
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @ravion/web exec playwright install --with-deps chromium
+
+      - name: Run one isolated resolution
+        run: pnpm --filter @ravion/api exec tsx ../../scripts/e2e-ci.ts
+
+      - name: Collect MySQL logs
+        if: failure()
+        run: |
+          mkdir -p e2e-logs
+          docker ps -aq | while read -r id; do
+            docker logs "$id" > "e2e-logs/mysql-${id}.log" 2>&1 || true
+          done
+
+      - name: Install zip tools and sanitize evidence
+        if: failure()
+        run: |
+          sudo apt-get update && sudo apt-get install -y zip unzip
+          pnpm --filter @ravion/api exec tsx ../../scripts/e2e-sanitize-log.ts
+
+      - name: Upload sanitized evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-${{ matrix.project }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: e2e-logs/sanitized/

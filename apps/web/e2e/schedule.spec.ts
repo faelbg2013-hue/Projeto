@@ -1,27 +1,7 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { e2eAdminEmail, e2eAdminPassword, e2eApiOrigin, e2eTenantSlug } from './target';
 
-const apiOrigin = 'http://127.0.0.1:43111';
-
-function envValue(name: string): string {
-  const fromProcess = process.env[name]?.trim();
-  if (fromProcess) {
-    return fromProcess;
-  }
-  const text = readFileSync(fileURLToPath(new URL('../../../.env', import.meta.url)), 'utf8');
-  for (const line of text.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) {
-      continue;
-    }
-    const separator = trimmed.indexOf('=');
-    if (trimmed.slice(0, separator) === name) {
-      return trimmed.slice(separator + 1).trim();
-    }
-  }
-  throw new Error(`Variável ausente: ${name}`);
-}
+const apiOrigin = e2eApiOrigin;
 
 function nextWeekday(weekday: number): string {
   const today = new Intl.DateTimeFormat('en-CA', {
@@ -58,7 +38,7 @@ async function login(page: Page, email: string, password: string): Promise<void>
 
 async function apiToken(request: APIRequestContext, email: string, password: string): Promise<string> {
   const response = await request.post(`${apiOrigin}/api/v1/auth/login`, {
-    headers: { 'X-Tenant-Slug': envValue('TENANT_SLUG') },
+    headers: { 'X-Tenant-Slug': e2eTenantSlug },
     data: { email, password },
   });
   expect(response.status()).toBe(200);
@@ -70,7 +50,7 @@ test('admin configures a weekly schedule, block, exception and availability', as
   page,
   request,
 }, testInfo) => {
-  const token = await apiToken(request, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  const token = await apiToken(request, e2eAdminEmail, e2eAdminPassword);
   const email = `e2e-agenda-${testInfo.project.name}-${Date.now()}@example.com`;
   const serviceName = `Agenda ${testInfo.project.name} ${Date.now()}`;
   const created = await request.post(`${apiOrigin}/api/v1/professionals`, {
@@ -90,7 +70,7 @@ test('admin configures a weekly schedule, block, exception and availability', as
   });
   expect(service.status()).toBe(201);
 
-  await login(page, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  await login(page, e2eAdminEmail, e2eAdminPassword);
   await page.goto(`/admin/professionals/${professional.id}/schedule`);
   await expect(page.getByRole('heading', { name: 'Agenda' })).toBeVisible();
   const monday = page.getByRole('region', { name: 'Segunda' });
@@ -147,7 +127,7 @@ test('professional edits the own agenda and cannot open administration', async (
   page,
   request,
 }, testInfo) => {
-  const token = await apiToken(request, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  const token = await apiToken(request, e2eAdminEmail, e2eAdminPassword);
   const email = `e2e-pro-agenda-${testInfo.project.name}-${Date.now()}@example.com`;
   const password = 'senha-segura';
   const created = await request.post(`${apiOrigin}/api/v1/professionals`, {

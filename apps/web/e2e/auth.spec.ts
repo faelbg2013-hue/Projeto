@@ -37,6 +37,15 @@ test('registers, protects the account page, and logs out', async ({ page }, test
   await expect(page.getByRole('heading', { name: 'Ana Costa' })).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
   await expect(page.getByText('Cliente')).toBeVisible();
+  const browserStorage = await page.evaluate(() => ({
+    localStorage: localStorage.length,
+    sessionStorage: sessionStorage.length,
+    documentCookie: document.cookie,
+  }));
+  expect(browserStorage.localStorage).toBe(0);
+  expect(browserStorage.sessionStorage).toBe(0);
+  expect(browserStorage.documentCookie).not.toContain('ravion_access');
+  expect(browserStorage.documentCookie).not.toContain('ravion_refresh');
   await expectNoHorizontalOverflow(page);
 
   await page.getByRole('button', { name: 'Sair' }).click();

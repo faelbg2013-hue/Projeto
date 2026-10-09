@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { createIntegrationPrisma } from '../../config/integration-database';
 import { UserRole } from '@ravion/types';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -23,7 +23,7 @@ function futureSlot(weekday: number, time: string): { date: string; time: string
 }
 
 describe('appointments', () => {
-  const prisma = new PrismaClient();
+  const prisma = createIntegrationPrisma();
   const suffix = randomUUID().slice(0, 8);
   const tenantA = { id: randomUUID(), name: 'Agenda A', slug: `fase5-a-${suffix}` };
   const tenantB = { id: randomUUID(), name: 'Agenda B', slug: `fase5-b-${suffix}` };

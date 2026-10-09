@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { createIntegrationPrisma } from '../../config/integration-database';
 import { UserRole } from '@ravion/types';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -14,7 +14,7 @@ const saturday = nextOrSameDate(today, 6);
 const yesterday = addDays(today, -1);
 
 describe('professional schedule and availability', () => {
-  const prisma = new PrismaClient();
+  const prisma = createIntegrationPrisma();
   const suffix = randomUUID().slice(0, 8);
   const tenantA = { id: randomUUID(), name: 'Agenda A', slug: `fase4-a-${suffix}` };
   const tenantB = { id: randomUUID(), name: 'Agenda B', slug: `fase4-b-${suffix}` };

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { createIntegrationPrisma } from '../../config/integration-database';
 import { UserRole } from '@ravion/types';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -9,7 +9,7 @@ import { PasswordService } from '../../common/auth/password.service';
 const password = 'senha-segura-123';
 
 describe('authentication and tenant isolation', () => {
-  const prisma = new PrismaClient();
+  const prisma = createIntegrationPrisma();
   const suffix = randomUUID().slice(0, 8);
   const tenantA = {
     id: randomUUID(),

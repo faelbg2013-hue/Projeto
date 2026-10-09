@@ -31,7 +31,7 @@ jobs:
           --health-start-period=30s
     env:
       NODE_ENV: test
-      DATABASE_URL: mysql://ravion_ci:ravion_ci_password@127.0.0.1:3306/ravion_barber_ci
+      DATABASE_URL: mysql://ravion_ci:ravion_ci_password@127.0.0.1:3306/ravion_integration_test
       MYSQL_ROOT_PASSWORD: ci-root
       JWT_SECRET: ci-only-jwt-access-secret-not-for-production
       JWT_REFRESH_SECRET: ci-only-jwt-refresh-secret-not-for-production
@@ -61,6 +61,12 @@ jobs:
       - name: Prisma validate
         run: pnpm prisma:validate
 
+      - name: MySQL client for the isolated test databases
+        run: sudo apt-get update && sudo apt-get install -y default-mysql-client
+
+      - name: Create the isolated integration database
+        run: mysql -h 127.0.0.1 -P 3306 -uroot -pci-root -e "CREATE DATABASE IF NOT EXISTS ravion_integration_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON ravion_integration_test.* TO 'ravion_ci'@'%'; FLUSH PRIVILEGES;"
+
       - name: Apply migrations
         run: pnpm db:migrate:deploy
 
@@ -72,9 +78,6 @@ jobs:
 
       - name: Test shared packages
         run: pnpm --filter @ravion/ui test && pnpm --filter @ravion/types test && pnpm --filter @ravion/validation test
-
-      - name: MySQL client for the isolated bootstrap database
-        run: sudo apt-get update && sudo apt-get install -y default-mysql-client
 
       - name: Test API
         run: pnpm --filter @ravion/api exec vitest run --no-file-parallelism

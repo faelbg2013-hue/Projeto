@@ -11,6 +11,17 @@ import { resolveApiUrl } from './src/lib/api-url';
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const envDir = path.resolve(rootDir, '../..');
 
+function devApiProxy(): string {
+  const configured = process.env.RAVION_DEV_API_PROXY?.trim();
+  if (!configured) {
+    return 'http://127.0.0.1:43111';
+  }
+  if (configured !== 'http://127.0.0.1:43121') {
+    throw new Error('RAVION_DEV_API_PROXY só pode apontar para a API E2E isolada.');
+  }
+  return configured;
+}
+
 function assertProductionApiUrl(mode: string): void {
   if (mode !== 'production') {
     return;
@@ -81,7 +92,9 @@ export default defineConfig(({ command, mode }) => {
               navigateFallbackDenylist: [/^\/api\//],
             },
             devOptions: {
-              enabled: true,
+              // The E2E dev server proxies /api. Generating the dev service worker
+              // blocks that proxy on the first page, so registration never finishes.
+              enabled: process.env.RAVION_DEV_API_PROXY !== 'http://127.0.0.1:43121',
               type: 'module',
             },
           }),
@@ -93,7 +106,7 @@ export default defineConfig(({ command, mode }) => {
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:43111',
+        target: devApiProxy(),
         changeOrigin: true,
       },
     },

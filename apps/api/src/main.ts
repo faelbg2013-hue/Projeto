@@ -12,6 +12,7 @@ import { redactSensitiveText } from './common/logger/redact';
 import { requestId } from './common/http/request-id';
 import { requestLogger } from './common/middleware/request-logger.middleware';
 import { applyTrustProxy } from './common/security/trust-proxy';
+import { assertE2eStack, e2eStackName, e2eStackRequested } from './config/e2e-stack';
 import { loadEnvFiles } from './config/load-env';
 import { applyOpenApiConventions, buildSwaggerConfig, swaggerModels } from './config/swagger';
 
@@ -27,6 +28,9 @@ function readSwaggerFlag(config: ConfigService): 'true' | 'false' | undefined {
 
 async function bootstrap(): Promise<void> {
   loadEnvFiles();
+  if (e2eStackRequested(process.env)) {
+    assertE2eStack(process.env);
+  }
 
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log'],
@@ -65,6 +69,12 @@ async function bootstrap(): Promise<void> {
     exposedHeaders: ['X-Request-Id'],
   });
   app.use(cookieParser());
+  if (process.env.E2E_STACK === e2eStackName) {
+    app.use((_req: unknown, res: { setHeader: (name: string, value: string) => void }, next: () => void) => {
+      res.setHeader('X-Ravion-Stack', e2eStackName);
+      next();
+    });
+  }
   app.use(requestId());
   app.use(requestLogger());
   app.setGlobalPrefix('api');

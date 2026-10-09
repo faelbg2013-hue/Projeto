@@ -19,7 +19,7 @@ const CI_SOURCE_DATABASE = 'ravion_barber_ci';
 const CI_SOURCE_USER = 'ravion_ci';
 const PROTECTED_DATABASES = ['ravion_barber', 'ravion_homolog', 'ravion_barber_ci'];
 
-type BootstrapAdminMode = 'local' | 'ci';
+type BootstrapAdminMode = 'local' | 'ci' | 'e2e';
 
 interface BootstrapTestTarget {
   url: string;
@@ -44,6 +44,21 @@ function resolveBootstrapTestTarget(databaseUrl: string): BootstrapTestTarget {
     decodeURIComponent(url.username) === CI_SOURCE_USER &&
     url.hostname === '127.0.0.1' &&
     (url.port === '' || url.port === '3306');
+  const integrationOnE2e =
+    source === 'ravion_integration_test' &&
+    decodeURIComponent(url.username) === 'ravion_integration' &&
+    url.hostname === '127.0.0.1' &&
+    url.port === '33116';
+  const integrationOnCi =
+    source === 'ravion_integration_test' &&
+    decodeURIComponent(url.username) === CI_SOURCE_USER &&
+    url.hostname === '127.0.0.1' &&
+    (url.port === '' || url.port === '3306') &&
+    process.env.GITHUB_ACTIONS === 'true';
+  if (integrationOnE2e || integrationOnCi) {
+    url.pathname = `/${ISOLATED_DATABASE}`;
+    return { url: url.toString(), mode: integrationOnCi ? 'ci' : 'e2e' };
+  }
   if (!LOCAL_SOURCE_DATABASES.has(source) && !ciSource) {
     if (source === CI_SOURCE_DATABASE) {
       throw new Error(
@@ -89,12 +104,15 @@ function assertBootstrapAdminStatement(statement: string): void {
   }
 }
 
-async function mysqlAsLocalRoot(statement: string): Promise<void> {
+async function mysqlInContainer(container: string, statement: string): Promise<void> {
+  if (container !== 'ravion-barber-mysql' && container !== 'ravion-e2e-mysql') {
+    throw new Error('O teste de bootstrap só administra os MySQL locais já previstos.');
+  }
   await execFileAsync(
     'docker',
     [
       'exec',
-      'ravion-barber-mysql',
+      container,
       'sh',
       '-c',
       'umask 077; printf "[client]\\nuser=root\\npassword=%s\\n" "$MYSQL_ROOT_PASSWORD" > /tmp/ravion-bootstrap.cnf; mysql --defaults-extra-file=/tmp/ravion-bootstrap.cnf --protocol=socket --connect-timeout=5 --batch -e "$1"; status=$?; rm -f /tmp/ravion-bootstrap.cnf; exit $status',
@@ -103,6 +121,14 @@ async function mysqlAsLocalRoot(statement: string): Promise<void> {
     ],
     { timeout: 60_000 },
   );
+}
+
+async function mysqlAsLocalRoot(statement: string): Promise<void> {
+  await mysqlInContainer('ravion-barber-mysql', statement);
+}
+
+async function mysqlAsE2eRoot(statement: string): Promise<void> {
+  await mysqlInContainer('ravion-e2e-mysql', statement);
 }
 
 async function mysqlAsCiRoot(statement: string): Promise<void> {
@@ -137,6 +163,10 @@ async function runBootstrapAdmin(statement: string, mode: BootstrapAdminMode): P
   assertBootstrapAdminStatement(statement);
   if (mode === 'ci') {
     await mysqlAsCiRoot(statement);
+    return;
+  }
+  if (mode === 'e2e') {
+    await mysqlAsE2eRoot(statement);
     return;
   }
   await mysqlAsLocalRoot(statement);
@@ -221,6 +251,41 @@ describe('bootstrap test database guard', () => {
     expect(() =>
       resolveBootstrapTestTarget('mysql://root:secret@127.0.0.1:3306/ravion_barber_ci'),
     ).toThrow('ravion_ci');
+  });
+
+  it('rewrites the local integration database onto the E2E MySQL', () => {
+    const target = resolveBootstrapTestTarget(
+      'mysql://ravion_integration:secret@127.0.0.1:33116/ravion_integration_test',
+    );
+    expect(target.mode).toBe('e2e');
+    expect(new URL(target.url).pathname).toBe('/ravion_bootstrap_test');
+    expect(new URL(target.url).port).toBe('33116');
+  });
+
+  it('rewrites the CI integration database only when GitHub Actions is set', () => {
+    const previous = process.env.GITHUB_ACTIONS;
+    process.env.GITHUB_ACTIONS = 'true';
+    try {
+      const target = resolveBootstrapTestTarget(
+        'mysql://ravion_ci:secret@127.0.0.1:3306/ravion_integration_test',
+      );
+      expect(target.mode).toBe('ci');
+      expect(new URL(target.url).pathname).toBe('/ravion_bootstrap_test');
+    } finally {
+      if (previous === undefined) {
+        delete process.env.GITHUB_ACTIONS;
+      } else {
+        process.env.GITHUB_ACTIONS = previous;
+      }
+    }
+  });
+
+  it('rejects the integration database on the development port without GitHub Actions', () => {
+    expect(() =>
+      resolveBootstrapTestTarget(
+        'mysql://ravion_ci:secret@127.0.0.1:3306/ravion_integration_test',
+      ),
+    ).toThrow('recusou');
   });
 
   it('rejects an unknown database even when CI is set', () => {

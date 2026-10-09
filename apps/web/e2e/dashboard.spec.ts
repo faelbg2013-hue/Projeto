@@ -1,27 +1,7 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { e2eAdminEmail, e2eAdminPassword, e2eApiOrigin, e2eTenantSlug } from './target';
 
-const apiOrigin = 'http://127.0.0.1:43111';
-
-function envValue(name: string): string {
-  const fromProcess = process.env[name]?.trim();
-  if (fromProcess) {
-    return fromProcess;
-  }
-  const text = readFileSync(fileURLToPath(new URL('../../../.env', import.meta.url)), 'utf8');
-  for (const line of text.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) {
-      continue;
-    }
-    const separator = trimmed.indexOf('=');
-    if (trimmed.slice(0, separator) === name) {
-      return trimmed.slice(separator + 1).trim();
-    }
-  }
-  throw new Error(`Variável ausente: ${name}`);
-}
+const apiOrigin = e2eApiOrigin;
 
 function nextWeekday(weekday: number): string {
   const today = new Intl.DateTimeFormat('en-CA', {
@@ -58,7 +38,7 @@ async function login(page: Page, email: string, password: string): Promise<void>
 
 async function apiToken(request: APIRequestContext, email: string, password: string): Promise<string> {
   const response = await request.post(`${apiOrigin}/api/v1/auth/login`, {
-    headers: { 'X-Tenant-Slug': envValue('TENANT_SLUG') },
+    headers: { 'X-Tenant-Slug': e2eTenantSlug },
     data: { email, password },
   });
   expect(response.status()).toBe(200);
@@ -81,7 +61,7 @@ async function openWeek(request: APIRequestContext, token: string, professionalI
 }
 
 test('client and professional cannot open the operational dashboard', async ({ page, request }, testInfo) => {
-  const adminToken = await apiToken(request, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  const adminToken = await apiToken(request, e2eAdminEmail, e2eAdminPassword);
   const stamp = `${testInfo.project.name}-${Date.now()}`;
   const professionalEmail = `e2e-painel-pro-${stamp}@example.com`;
   const created = await request.post(`${apiOrigin}/api/v1/professionals`, {
@@ -117,7 +97,7 @@ test('admin filters the day, sees points and normal bookings, and updates status
   page,
   request,
 }, testInfo) => {
-  const adminToken = await apiToken(request, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  const adminToken = await apiToken(request, e2eAdminEmail, e2eAdminPassword);
   const stamp = `${testInfo.project.name}-${Date.now()}`;
   const serviceName = `Corte painel ${stamp}`;
   const displayName = `! Painel ${stamp}`;
@@ -184,7 +164,7 @@ test('admin filters the day, sees points and normal bookings, and updates status
   await book(professional.id, '13:00', 'NORMAL');
   await book(other.id, '14:00', 'NORMAL');
 
-  await login(page, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  await login(page, e2eAdminEmail, e2eAdminPassword);
   await page.getByRole('link', { name: 'Painel' }).click();
   await expect(page).toHaveURL(/\/admin\/dashboard$/);
   await expect(page.getByRole('heading', { name: 'Painel', exact: true })).toBeVisible();

@@ -1,27 +1,7 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { e2eAdminEmail, e2eAdminPassword, e2eApiOrigin, e2eDatabaseUrl, e2eTenantSlug } from './target';
 
-const apiOrigin = 'http://127.0.0.1:43111';
-
-function envValue(name: string): string {
-  const fromProcess = process.env[name]?.trim();
-  if (fromProcess) {
-    return fromProcess;
-  }
-  const text = readFileSync(fileURLToPath(new URL('../../../.env', import.meta.url)), 'utf8');
-  for (const line of text.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) {
-      continue;
-    }
-    const separator = trimmed.indexOf('=');
-    if (trimmed.slice(0, separator) === name) {
-      return trimmed.slice(separator + 1).trim();
-    }
-  }
-  throw new Error(`Variável ausente: ${name}`);
-}
+const apiOrigin = e2eApiOrigin;
 
 function saoPauloToday(): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -68,7 +48,7 @@ async function login(page: Page, email: string, password: string): Promise<void>
 
 async function apiToken(request: APIRequestContext, email: string, password: string): Promise<string> {
   const response = await request.post(`${apiOrigin}/api/v1/auth/login`, {
-    headers: { 'X-Tenant-Slug': envValue('TENANT_SLUG') },
+    headers: { 'X-Tenant-Slug': e2eTenantSlug },
     data: { email, password },
   });
   expect(response.status()).toBe(200);
@@ -77,9 +57,8 @@ async function apiToken(request: APIRequestContext, email: string, password: str
 }
 
 async function shiftIntoNow(id: string): Promise<void> {
-  process.env.DATABASE_URL ??= envValue('DATABASE_URL');
   const { PrismaClient } = await import('@prisma/client');
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({ datasources: { db: { url: e2eDatabaseUrl() } } });
   try {
     const now = new Date();
     const dayStart = new Date(`${saoPauloToday()}T00:00:00-03:00`);
@@ -113,7 +92,7 @@ test('client cannot open the professional area', async ({ page }) => {
 });
 
 test('admin cannot use the professional area', async ({ page }) => {
-  await login(page, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  await login(page, e2eAdminEmail, e2eAdminPassword);
   await page.goto('/profissional');
   await expect(page).toHaveURL(/\/conta$/);
   await page.goto('/profissional/agenda');
@@ -124,7 +103,7 @@ test('admin cannot use the professional area', async ({ page }) => {
 
 test('professional runs the day from the phone-sized agenda', async ({ page, request }, testInfo) => {
   const stamp = `${testInfo.project.name}${Date.now()}`;
-  const adminToken = await apiToken(request, envValue('ADMIN_EMAIL'), envValue('ADMIN_PASSWORD'));
+  const adminToken = await apiToken(request, e2eAdminEmail, e2eAdminPassword);
   const email = `e2e-op-pro-${stamp}@example.com`;
   const displayName = `Operação ${stamp}`;
   const clientName = `Cliente ${stamp}`;

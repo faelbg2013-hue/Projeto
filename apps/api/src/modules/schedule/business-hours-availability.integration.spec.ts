@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { createIntegrationPrisma } from '../../config/integration-database';
 import { UserRole, type BusinessHours, type BusinessHoursDay } from '@ravion/types';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -33,7 +33,7 @@ function openDay(open: string, close: string): BusinessHoursDay {
 }
 
 describe('business hours inside availability', () => {
-  const prisma = new PrismaClient();
+  const prisma = createIntegrationPrisma();
   const suffix = randomUUID().slice(0, 8);
   const tenantA = { id: randomUUID(), name: 'Horas A', slug: `fase113-a-${suffix}` };
   const tenantB = { id: randomUUID(), name: 'Horas B', slug: `fase113-b-${suffix}` };

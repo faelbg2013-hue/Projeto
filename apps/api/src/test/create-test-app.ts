@@ -7,8 +7,10 @@ import { GlobalExceptionFilter } from '../common/filters/global-exception.filter
 import { requestId } from '../common/http/request-id';
 import { applyTrustProxy } from '../common/security/trust-proxy';
 import { ScheduleNow } from '../common/time/schedule-now';
+import { assertIntegrationDatabase } from '../config/integration-database';
 
 export async function createTestApp(options?: { now?: () => Date }): Promise<INestApplication> {
+  assertIntegrationDatabase(process.env.DATABASE_URL);
   const builder = Test.createTestingModule({
     imports: [AppModule],
   });

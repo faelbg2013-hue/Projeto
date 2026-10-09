@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
-import { Prisma, PrismaClient, type PointsTransactionType } from '@prisma/client';
+import { Prisma, type PointsTransactionType } from '@prisma/client';
+import { createIntegrationPrisma } from '../../config/integration-database';
 import { UserRole } from '@ravion/types';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -10,7 +11,7 @@ import { parseScheduleInstant } from '../../common/time/schedule-clock';
 const password = 'senha-segura-123';
 
 describe('admin client management', () => {
-  const prisma = new PrismaClient();
+  const prisma = createIntegrationPrisma();
   const suffix = randomUUID().slice(0, 8);
   const tenantA = { id: randomUUID(), name: 'Clientes A', slug: `fase123-a-${suffix}` };
   const tenantB = { id: randomUUID(), name: 'Clientes B', slug: `fase123-b-${suffix}` };
